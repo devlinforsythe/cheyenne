@@ -25,6 +25,8 @@ import wsl from "./wsl"
 import wslRenderer from "./wsl/renderer"
 import microsoftOffice from "./microsoft-office"
 import microsoftOfficeRenderer from "./microsoft-office/renderer"
+import commandCenter from "./command-center" // cheyenne
+import commandCenterRenderer from "./command-center/renderer" // cheyenne
 
 // The window renders once every built-in is active, so the small renderer entries load with the app, like the
 // features they replaced. Heavy UI stays behind `lazy()` inside them.
@@ -49,4 +51,5 @@ export const builtins = Extension.compose(
   { ...ssh, renderer: eager(sshRenderer) },
   { ...wsl, renderer: eager(wslRenderer) },
   { ...microsoftOffice, renderer: eager(microsoftOfficeRenderer) },
+  { ...commandCenter, renderer: eager(commandCenterRenderer) }, // cheyenne
 )

@@ -674,6 +674,7 @@ export const builtins = Extension.compose(
   { ...ssh, main: () => import("./ssh/main") },
   { ...wsl, main: () => import("./wsl/main") },
   microsoftOffice,
+  { ...commandCenter, main: () => import("./command-center/main") }, // cheyenne
 )
 ```
 
@@ -700,6 +701,7 @@ export const builtins = Extension.compose(
   { ...ssh, renderer: eager(sshRenderer) },
   { ...wsl, renderer: eager(wslRenderer) },
   { ...microsoftOffice, renderer: eager(microsoftOfficeRenderer) },
+  { ...commandCenter, renderer: eager(commandCenterRenderer) }, // cheyenne
 )
 ```
 

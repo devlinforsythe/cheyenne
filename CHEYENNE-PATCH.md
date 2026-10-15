@@ -17,7 +17,24 @@ Every edited code line carries a `// cheyenne` comment, so `git grep -n "// chey
 | `packages/app/src/app.tsx` | `defaultTheme="cheyenne"` on `ThemeProvider` (a theme the user picks still wins) |
 | `packages/desktop/icons/dev/*` | binary: every dev icon replaced from `~/gandalf/media/cheyenne/cheyenne-icon-1024.png` (owner-approved sketch, 2026-10-15; after changing icons run `bun ./scripts/copy-icons.ts dev` before electron-builder) (`icon.icns` built with the macOS 824/1024 inset) |
 
+## Core files touched (C1)
+
+| File | Change |
+|---|---|
+| `packages/gui-extensions/src/renderer.ts` | registers the `command-center` extension (2 imports + 1 list entry) |
+| `packages/gui-extensions/src/main.ts` | registers its main entry (1 import + 1 list entry) |
+| `packages/gui-extensions/README.md` | the two `builtins` blocks mirror those entries (`sdk-docs` lint checks they match) |
+
 ## Added files (no merge cost)
+
+- `packages/gui-extensions/src/command-center/` — the Command Center panel (C1), a GUI extension (macOS only).
+  Main process (`main.ts`) reads Airtable base `appLcCdYRMLbuEQ7R` (open Tasks, Events from yesterday on, New
+  Requests) and runs `brain context --all` through `zsh -lc` (Electron's PATH has no `~/bin`); the window
+  (`panel.tsx`) only talks to it over the `command-center` Ipc. Ticking a to-do PATCHes its Status to `Done`;
+  unticking restores the status it had. Everything else is read-only.
+  **Token:** `AIRTABLE_TOKEN` from the environment, else its line in `~/.hermes/.env` (same as the mail-job). It
+  stays in the main process; nothing is committed. Open it from the command palette (`⌘⇧P` → "Open Command
+  Center") or the side-panel `+` menu; it is a side tab, so it needs an open session (not on Home).
 
 - `packages/ui/src/theme/themes/cheyenne.json` — the Cheyenne theme. Desktop themes live here, not in
   `packages/theme` (that package is the TUI's). It is picked up by the `themes/*.json` glob, so no registry edit.
@@ -55,6 +72,11 @@ Models: the app uses the shared `~/.config/opencode/opencode.jsonc`. An `ollama`
 on in Manage models. On this Mac it ran ~4 tok/s with Ollama's default 4096 context and timed out
 ("waiting for response headers") behind the title request, so the local path needs a bigger context and a faster
 box (the mini / R630) before it is usable.
+
+`docs/c1-proof.jpg` (C1): Command Center side tab in a session with upcoming events, new requests, 158 open
+to-dos and the brain briefing; ticking "dsh: add workspace…" (`rech6CII2n6BwKews`) struck it through and Airtable
+read `Done`; unticking set it back to `To do`, confirmed through the API (`docs/c1-undone.jpg`). The to-do list
+takes ~10 s to load (every open task, all pages).
 
 ## Not branded yet
 
