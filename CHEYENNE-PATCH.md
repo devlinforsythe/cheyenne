@@ -41,6 +41,20 @@ Every edited code line carries a `// cheyenne` comment, so `git grep -n "// chey
   Dark: tunnel black `#11171b`, white-caps ink `#ece8df`, rust arch primary `#b4532f`, tunnel-lamp accent `#f2a640`,
   steel info `#8fa4b0`. Light: concrete `#e4e0d8` with the same rust / lamp / steel.
 
+- `packages/plugins/workers/` — the `run_worker(worker, stage_brief, mission_dir, business?, topic?)` server tool
+  (C2), a V2 plugin (no core edits). It shells out to each worker's own CLI on its own subscription login, through
+  `zsh -lc` (the server's PATH has no `~/bin` / `~/.local/bin`; the brief is passed as an argument, never spliced
+  into the script), streams stdout+stderr as tool progress (`metadata.output`, ~2/s), returns the output, and then
+  runs `brain log -a <worker> [-b business] [-t topic]`. Unattended flags: `claude -p --permission-mode acceptEdits`,
+  `codex exec -m gpt-5.6-sol --sandbox workspace-write --skip-git-repo-check`, `cursor-agent -p --force
+  --output-format text`, `grok --always-approve --single`. 30-minute cap; the session's stop button kills the run.
+  **Loaded by config, not the build:** the server is the prebuilt `opencode-cli`, so the plugin is listed in
+  `~/.config/opencode/opencode.jsonc` as `"plugins": ["/Users/devlinforsythe/cheyenne/packages/plugins/workers"]`
+  (backup `opencode.jsonc.bak-c2`); edits hot-reload. Restart the server with `opencode-cli service` or kill
+  `opencode-cli serve --service` after changing the list.
+  The generic tool card shows only "Used run_worker" and the model's summary, not the live stream; a run_worker
+  renderer needs `tool-renderer` exported from `packages/session-ui` (a core edit), left for later.
+
 ## Build (macOS arm64, unsigned)
 
 ```bash
@@ -77,6 +91,23 @@ box (the mini / R630) before it is usable.
 to-dos and the brain briefing; ticking "dsh: add workspace…" (`rech6CII2n6BwKews`) struck it through and Airtable
 read `Done`; unticking set it back to `To do`, confirmed through the API (`docs/c1-undone.jpg`). The to-do list
 takes ~10 s to load (every open task, all pages).
+
+`docs/c2-proof.jpg` (C2): three sessions on the app's background server, each calling `run_worker` once with a
+one-line brief, and the brain entries they wrote (`-b infra -t cheyenne`): claude 6 s, cursor 9 s, codex 6 s.
+Screen control of Cheyenne.app was declined, so the sessions were started with the app's own
+`opencode-cli run --auto` and photographed in the same server's web UI (`opencode-cli pair`); they show in the
+app's session list too.
+- **codex:** `~/.codex/config.toml` has `model = "gpt-6.1-sol"` (the Codex picker writes it), which a ChatGPT login
+  refuses ("not supported when using Codex with a ChatGPT account"); so are gpt-6-sol, gpt-5.5 and gpt-5.3-codex.
+  `gpt-5.6-sol` (from `~/.codex/models_cache.json`) works, so the plugin pins it. `--full-auto` no longer exists in
+  codex-cli 0.150.1; `--sandbox workspace-write` replaces it. Its effort stays the config's `max`.
+- **grok: not verified.** xAI's Grok Build CLI (`grok` 1.0.52, installed with `curl -fsSL https://x.ai/cli/install.sh
+  | bash` into `~/.grok`; the same CLI Paperclip's `grok_local` adapter drives) runs headless with `--single` and
+  signs in with the subscription (`grok login --device-auth`, stored in `~/.grok/auth.json`), no API key. The
+  owner has not finished that sign-in, so `grok models` says "You are not authenticated" and no grok run was made.
+  After `grok login --device-auth`, the grok row needs no change. `gbot` was not used (Keychain prompt).
+- **Gotcha:** the Grok installer overwrote `~/.local/bin/agent` (Cursor's `agent` link). It was put back:
+  `ln -sf "$(readlink ~/.local/bin/cursor-agent)" ~/.local/bin/agent`. `cursor-agent` itself was untouched.
 
 ## Not branded yet
 

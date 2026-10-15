@@ -1,0 +1,15 @@
+{
+  "name": "@cheyenne/plugin-workers",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Cheyenne run_worker tool: claude / codex / cursor-agent / grok CLIs as mission workers",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./index.ts",
+    "./server": "./index.ts"
+  },
+  "peerDependencies": {
+    "@opencode/plugin": "^2.0.27 || ^0.0.0-dev"
+  }
+}
