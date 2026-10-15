@@ -1,0 +1,47 @@
+{
+  "$schema": "https://opencode.ai/desktop-theme.json",
+  "name": "Cheyenne",
+  "id": "cheyenne",
+  "light": {
+    "palette": {
+      "neutral": "#e4e0d8",
+      "ink": "#1d2328",
+      "primary": "#8a3a22",
+      "accent": "#c97a1c",
+      "success": "#4f7a3a",
+      "warning": "#b8771a",
+      "error": "#b0321f",
+      "info": "#4f6a7a",
+      "diffAdd": "#5f8a4a",
+      "diffDelete": "#b0442c"
+    },
+    "overrides": {
+      "syntax-comment": "#7d7a72",
+      "syntax-keyword": "#8a3a22",
+      "syntax-primitive": "#4f6a7a",
+      "syntax-property": "#9a5a1c",
+      "syntax-constant": "#b8771a"
+    }
+  },
+  "dark": {
+    "palette": {
+      "neutral": "#11171b",
+      "ink": "#ece8df",
+      "primary": "#b4532f",
+      "accent": "#f2a640",
+      "success": "#8fb06a",
+      "warning": "#f2a640",
+      "error": "#e0603e",
+      "info": "#8fa4b0",
+      "diffAdd": "#6f9a5a",
+      "diffDelete": "#c0502f"
+    },
+    "overrides": {
+      "syntax-comment": "#7d8288",
+      "syntax-keyword": "#d0714a",
+      "syntax-primitive": "#a9bac4",
+      "syntax-property": "#f2a640",
+      "syntax-constant": "#e8c27a"
+    }
+  }
+}

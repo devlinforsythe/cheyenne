@@ -64,7 +64,7 @@ function resolveChannel() {
 }
 
 const APP_IDS = {
-  dev: "ai.opencode.desktop.dev",
+  dev: "com.devlinforsythe.cheyenne", // cheyenne
   beta: "ai.opencode.desktop.beta",
   prod: "ai.opencode.desktop",
 } as const
@@ -221,7 +221,7 @@ export function getConfig() {
       return {
         ...base,
         appId,
-        productName: "OpenCode Dev",
+        productName: "Cheyenne", // cheyenne
         deb: { fpm: [metainfoFpm(appId)] },
         rpm: { packageName: "opencode-dev", fpm: [metainfoFpm(appId)] },
       }
