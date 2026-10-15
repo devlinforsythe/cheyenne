@@ -25,6 +25,18 @@ export const Event = Schema.Struct({
 /** A New row of the Requests table. */
 export const Request = Schema.Struct({ id: Schema.String, title: Schema.String, from: Schema.optional(Schema.String) })
 
+/** A Cheyenne mission (C3), as `cheyenne-mission list --json` reports it. */
+export const Mission = Schema.Struct({
+  id: Schema.String,
+  goal: Schema.String,
+  worktree: Schema.String,
+  branch: Schema.String,
+  business: Schema.String,
+  stages: Schema.Array(
+    Schema.Struct({ stage: Schema.String, workers: Schema.Array(Schema.String), status: Schema.String }),
+  ),
+})
+
 /**
  * Cheyenne's Command Center: the owner's Airtable base (`appLcCdYRMLbuEQ7R`) and the `brain` briefing. Main reads
  * the Airtable token from the environment or `~/.hermes/.env`, so it never reaches the window.
@@ -40,5 +52,9 @@ export const CommandCenter = Ipc.define({
     brief: { output: Schema.String },
     /** Sets a to-do's Status, e.g. "Done", or back to what it was. */
     setStatus: { input: Schema.Struct({ id: Schema.String, status: Schema.String }) },
+    /** Open missions, newest first. */
+    missions: { output: Schema.Array(Mission) },
+    /** The owner's go for a mission's current stage: runs its workers (detached). */
+    approve: { input: Schema.Struct({ id: Schema.String }) },
   },
 })

@@ -55,6 +55,23 @@ Every edited code line carries a `// cheyenne` comment, so `git grep -n "// chey
   The generic tool card shows only "Used run_worker" and the model's summary, not the live stream; a run_worker
   renderer needs `tool-renderer` exported from `packages/session-ui` (a core edit), left for later.
 
+- **Missions (C3), no core edits.** `packages/plugins/workers/workers.ts` (the worker runner, shared) and
+  `packages/plugins/workers/mission.ts` (mission state + detached stage runner + CLI); `index.ts` adds the server
+  tools `mission_open` and `mission_status`.
+  - A typed build request makes the model call `mission_open(goal, repo, business, name?, base?, rules?, stages?)`:
+    git worktree `~/missions/<id>` on branch `mission/<id>` (from `main`), `MISSION.md` in it (goal, rules, stage
+    table, results), state in `~/.cheyenne/missions/<id>.json`, worker logs in `~/.cheyenne/missions/<id>/`.
+  - Default stages (per mission, overridable): plan (claude, writes PLAN.md, no code) → research + build (grok +
+    cursor in parallel) → visuals/UX (codex, against `Recode Design/DESIGN-SYSTEM.md`) → verify (claude, VERIFY.md).
+    Every stage pauses for the owner unless its template says `pause: false`.
+  - **There is no approve tool for the model.** A stage starts only from the Command Center's Approve button or
+    `cheyenne-mission approve <id>`; either spawns a detached `bun mission.ts run <id>` that runs the stage, stores
+    notes, sets the next stage to waiting and writes `brain status -b <business> -t mission-<id>` (with
+    `--blocked "Owner: approve stage …"` while it waits). Workers are told never to merge, push or install.
+  - CLI: `~/bin/cheyenne-mission` is a symlink to `mission.ts` (`list [--json] | show <id> | approve <id> | run <id>`).
+  - Command Center: a Missions section (stage chips; Approve/Retry on the waiting or failed stage; refresh every
+    5 s) via two new Ipc methods `missions` / `approve` (contract, main, i18n, panel; all inside `command-center/`).
+
 ## Build (macOS arm64, unsigned)
 
 ```bash
@@ -106,6 +123,15 @@ app's session list too.
   `run_worker` inside Cheyenne.app; the grok row needed no change. `gbot` was not used (Keychain prompt).
 - **Gotcha:** the Grok installer overwrote `~/.local/bin/agent` (Cursor's `agent` link). It was put back:
   `ln -sf "$(readlink ~/.local/bin/cursor-agent)" ~/.local/bin/agent`. `cursor-agent` itself was untouched.
+
+`docs/c3-proof.jpg` (C3): in Cheyenne.app, the typed request "Build a … 610-B preamp as a Recode Audio plugin …"
+(GPT-5.6 Sol) loaded the recode-audio-engineering skill and called `mission_open`; the Command Center shows mission
+`ra-610-preamp` with plan waiting and an **Approve plan** button, which started the claude plan stage. Grok ran
+through the worker runner in the `c3-smoke` mission (78 s) and through `run_worker` ("Grok 4.7 READY").
+- The screenshot was taken over a local debug port (`--remote-debugging-port`), since the app's window sat behind a
+  full-screen Space; the button was pressed the same way.
+- Mission `goal` text is internal (it may name the reference gear); the RA naming rule binds public copy, and every
+  worker brief carries it.
 
 ## Not branded yet
 

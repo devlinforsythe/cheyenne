@@ -1,5 +1,6 @@
-import { createSignal, For, Show, type Accessor, type JSX } from "solid-js"
+import { createSignal, For, onCleanup, Show, type Accessor, type JSX } from "solid-js"
 import { createStore } from "solid-js/store"
+import { Button } from "@opencode/ui/button"
 import { Icon } from "@opencode/ui/icon"
 import { IconButton } from "@opencode/ui/icon-button"
 import { ScrollView } from "@opencode/ui/scroll-view"
@@ -45,6 +46,33 @@ export default function CommandCenterPanel(props: { center: Accessor<Live<Client
   }
 
   const airtable = createLatest(client, (value, signal) => value.client.airtable({ signal }))
+
+  // cheyenne C3: missions refresh every 5 s while the panel is open, so a running stage shows when it ends.
+  const [beat, setBeat] = createSignal(0)
+  const timer = setInterval(() => setBeat(beat() + 1), 5000)
+  onCleanup(() => clearInterval(timer))
+  const missions = createLatest(
+    () => {
+      const value = client()
+      return value && { ...value, beat: beat() }
+    },
+    (value, signal) => value.client.missions({ signal }),
+  )
+  const [approving, setApproving] = createSignal<string>()
+  const approve = (id: string) => {
+    const live = props.center()
+    if (live.status !== "active") return
+    setApproving(id)
+    void live.value
+      .approve({ id })
+      .catch((error: unknown) =>
+        showToast({ title: ctx.t("error.approve", { message: error instanceof Error ? error.message : String(error) }) }),
+      )
+      .finally(() => {
+        setApproving(undefined)
+        setBeat(beat() + 1)
+      })
+  }
   const brief = createLatest(client, (value, signal) => value.client.brief({ signal }))
 
   // Ticks optimistically, and puts the tick back the way it was if Airtable refuses.
@@ -87,6 +115,64 @@ export default function CommandCenterPanel(props: { center: Accessor<Live<Client
               {ctx.t("error.airtable", { message: airtable.error instanceof Error ? airtable.error.message : String(airtable.error) })}
             </div>
           </Show>
+
+          <Section title={ctx.t("missions")} count={missions.latest?.length}>
+            <Show when={missions.error}>
+              <div class="text-13-regular text-text-danger-base">
+                {ctx.t("error.missions", { message: missions.error instanceof Error ? missions.error.message : String(missions.error) })}
+              </div>
+            </Show>
+            <For each={missions.latest} fallback={<span class="text-13-regular text-text-weak">{ctx.t("empty")}</span>}>
+              {(mission) => {
+                const stage = () => mission.stages.find((item) => item.status !== "done")
+
+                return (
+                  <div class="flex flex-col gap-1.5 text-13-regular" data-slot="mission">
+                    <span class="text-text-base">{mission.goal}</span>
+                    <span class="text-12-regular text-text-weak">
+                      {mission.business} · {mission.branch} · {mission.worktree.replace(/^\/Users\/[^/]+/, "~")}
+                    </span>
+                    <div class="flex flex-wrap gap-1.5">
+                      <For each={mission.stages}>
+                        {(item) => (
+                          <span
+                            class="rounded px-1.5 py-0.5 text-11-medium"
+                            classList={{
+                              "bg-v2-background-bg-strong text-text-weak": item.status === "pending",
+                              "text-text-base": item.status !== "pending",
+                            }}
+                            style={
+                              item.status === "done"
+                                ? { background: "var(--surface-success-weak, transparent)", color: "var(--text-success-base)" }
+                                : item.status === "waiting"
+                                  ? { "box-shadow": "inset 0 0 0 1px var(--icon-warning-base)", ...lamp }
+                                  : item.status === "running"
+                                    ? { background: "var(--surface-brand-base)", color: "white" }
+                                    : item.status === "failed"
+                                      ? { color: "var(--text-danger-base)" }
+                                      : {}
+                            }
+                            title={`${item.workers.join(" + ")}: ${item.status}`}
+                          >
+                            {item.stage} · {item.workers.join("+")}
+                          </span>
+                        )}
+                      </For>
+                    </div>
+                    <Show when={stage()?.status === "waiting" || stage()?.status === "failed" ? stage() : undefined}>
+                      {(next) => (
+                        <div>
+                          <Button size="small" disabled={approving() === mission.id} onClick={() => approve(mission.id)}>
+                            {ctx.t(next().status === "failed" ? "retry" : "approve", { stage: next().stage })}
+                          </Button>
+                        </div>
+                      )}
+                    </Show>
+                  </div>
+                )
+              }}
+            </For>
+          </Section>
 
           <Section title={ctx.t("events")} count={airtable.latest?.events.length}>
             <For each={airtable.latest?.events} fallback={<span class="text-13-regular text-text-weak">{ctx.t("empty")}</span>}>

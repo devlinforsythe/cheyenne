@@ -60,6 +60,18 @@ const list = async (table: string, params: Record<string, string>, signal: Abort
   }
 }
 
+// A login shell, so the app finds ~/bin (brain, cheyenne-mission) and their runtimes like the owner's terminal does.
+// Arguments go in as $0 "$@", never into the script.
+const shell = (argv: string[], signal: AbortSignal) =>
+  new Promise<string>((resolve, reject) => {
+    execFile(
+      "/bin/zsh",
+      ["-lc", 'exec "$0" "$@"', ...argv],
+      { signal, maxBuffer: 4 * 1024 * 1024 },
+      (error, stdout, stderr) => (error ? reject(new Error(stderr.trim() || error.message)) : resolve(stdout)),
+    )
+  })
+
 const setup: MainSetup<typeof definition> = (ctx) => {
   ctx.provide(CommandCenter, {
     airtable: async (_, caller) => {
@@ -110,16 +122,10 @@ const setup: MainSetup<typeof definition> = (ctx) => {
         })),
       }
     },
-    // A login shell, so the app finds ~/bin/brain and its python like the owner's terminal does.
-    brief: (_, caller) =>
-      new Promise<string>((resolve, reject) => {
-        execFile(
-          "/bin/zsh",
-          ["-lc", "brain context --all"],
-          { signal: caller.signal, maxBuffer: 4 * 1024 * 1024 },
-          (error, stdout, stderr) => (error ? reject(new Error(stderr || error.message)) : resolve(stdout)),
-        )
-      }),
+    brief: (_, caller) => shell(["brain", "context", "--all"], caller.signal),
+    // cheyenne C3: missions live in ~/.cheyenne/missions; the CLI is packages/plugins/workers/mission.ts.
+    missions: async (_, caller) => JSON.parse(await shell(["cheyenne-mission", "list", "--json"], caller.signal)),
+    approve: async (input, caller) => void (await shell(["cheyenne-mission", "approve", input.id], caller.signal)),
     setStatus: async (input) => {
       await call(`${TASKS}/${input.id}`, ctx.scope.signal, {
         method: "PATCH",
