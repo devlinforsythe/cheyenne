@@ -101,11 +101,9 @@ app's session list too.
   refuses ("not supported when using Codex with a ChatGPT account"); so are gpt-6-sol, gpt-5.5 and gpt-5.3-codex.
   `gpt-5.6-sol` (from `~/.codex/models_cache.json`) works, so the plugin pins it. `--full-auto` no longer exists in
   codex-cli 0.150.1; `--sandbox workspace-write` replaces it. Its effort stays the config's `max`.
-- **grok: not verified.** xAI's Grok Build CLI (`grok` 1.0.52, installed with `curl -fsSL https://x.ai/cli/install.sh
-  | bash` into `~/.grok`; the same CLI Paperclip's `grok_local` adapter drives) runs headless with `--single` and
-  signs in with the subscription (`grok login --device-auth`, stored in `~/.grok/auth.json`), no API key. The
-  owner has not finished that sign-in, so `grok models` says "You are not authenticated" and no grok run was made.
-  After `grok login --device-auth`, the grok row needs no change. `gbot` was not used (Keychain prompt).
+- **grok: signed in 2026-10-15** (`grok login --device-auth`, account devlin@recodedesign.com, `~/.grok/auth.json`).
+  Headless check from the shell: `grok --always-approve --single "..."` answered as Grok 4.7. Not yet run through
+  `run_worker` inside Cheyenne.app; the grok row needed no change. `gbot` was not used (Keychain prompt).
 - **Gotcha:** the Grok installer overwrote `~/.local/bin/agent` (Cursor's `agent` link). It was put back:
   `ln -sf "$(readlink ~/.local/bin/cursor-agent)" ~/.local/bin/agent`. `cursor-agent` itself was untouched.
 
