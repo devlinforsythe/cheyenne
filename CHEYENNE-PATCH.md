@@ -15,7 +15,7 @@ Every edited code line carries a `// cheyenne` comment, so `git grep -n "// chey
 | `packages/desktop/src/main/windows/appearance.ts` | window title |
 | `packages/desktop/src/main/windows/early.ts` | early window title |
 | `packages/app/src/app.tsx` | `defaultTheme="cheyenne"` on `ThemeProvider` (a theme the user picks still wins) |
-| `packages/desktop/icons/dev/*` | binary: every dev icon replaced from `~/gandalf/media/cheyenne/cheyenne-icon-1024.png` (`icon.icns` built with the macOS 824/1024 inset) |
+| `packages/desktop/icons/dev/*` | binary: every dev icon replaced from `~/gandalf/media/cheyenne/cheyenne-icon-1024.png` (owner-approved sketch, 2026-10-15; after changing icons run `bun ./scripts/copy-icons.ts dev` before electron-builder) (`icon.icns` built with the macOS 824/1024 inset) |
 
 ## Added files (no merge cost)
 
