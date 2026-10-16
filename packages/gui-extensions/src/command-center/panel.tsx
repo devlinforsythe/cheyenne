@@ -1,4 +1,4 @@
-import { createSignal, For, onCleanup, Show, type Accessor, type JSX } from "solid-js"
+import { createSignal, For, onCleanup, Show, lazy, Suspense, type Accessor, type JSX } from "solid-js"
 import { createStore } from "solid-js/store"
 import { Button } from "@opencode/ui/button"
 import { Icon } from "@opencode/ui/icon"
@@ -8,6 +8,11 @@ import { showToast } from "@opencode/ui/toast"
 import { Markdown } from "@opencode/session-ui/markdown"
 import { createLatest, useExtension, type IpcClient, type Live } from "../sdk"
 import type { CommandCenter } from "./contract"
+
+// cheyenne 6.0a: Today is the original panel; the rest are the base's tables (tabs.ts).
+const TABS = ["today", "tasks", "projects", "decisions", "events", "travel", "accounts", "ask"] as const
+
+const TableView = lazy(() => import("./table"))
 
 type Client = IpcClient<(typeof CommandCenter)["spec"]>
 
@@ -35,6 +40,7 @@ function Section(props: { title: string; count?: number; children: JSX.Element }
 export default function CommandCenterPanel(props: { center: Accessor<Live<Client>> }) {
   const ctx = useExtension()
   const [tick, setTick] = createSignal(0)
+  const [view, setView] = createSignal<(typeof TABS)[number]>("today")
 
   // The status each to-do had before the owner ticked it here, so unticking puts it back.
   const [ticked, setTicked] = createStore<Record<string, string | undefined>>({})
@@ -108,6 +114,32 @@ export default function CommandCenterPanel(props: { center: Accessor<Live<Client
         />
       </div>
 
+      <div class="flex shrink-0 flex-wrap gap-1 border-b border-v2-border-border-base px-4 py-2" role="tablist">
+        <For each={TABS}>
+          {(id) => (
+            <button
+              type="button"
+              role="tab"
+              aria-selected={view() === id}
+              class="rounded px-2 py-0.5 text-12-medium"
+              classList={{ "text-text-weak": view() !== id, "bg-v2-background-bg-strong text-text-base": view() === id }}
+              onClick={() => setView(id)}
+            >
+              {ctx.t(`tab.${id}`)}
+            </button>
+          )}
+        </For>
+      </div>
+
+      <Show when={view() !== "today" && props.center().status === "active"}>
+        <ScrollView class="min-h-0 flex-1">
+          <Suspense>
+            <TableView center={props.center} tab={view()} tick={tick()} />
+          </Suspense>
+        </ScrollView>
+      </Show>
+
+      <Show when={view() === "today"}>
       <Show when={props.center().status === "active"} fallback={<div class="p-5 text-13-regular text-text-weak">{ctx.t("unavailable")}</div>}>
         <ScrollView class="min-h-0 flex-1">
           <Show when={airtable.error}>
@@ -244,6 +276,7 @@ export default function CommandCenterPanel(props: { center: Accessor<Live<Client
             <Show when={brief.latest}>{(text) => <Markdown text={text()} class="text-13-regular" />}</Show>
           </Section>
         </ScrollView>
+      </Show>
       </Show>
     </div>
   )

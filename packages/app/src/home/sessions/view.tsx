@@ -21,6 +21,8 @@ import {
   HomeSessionStatusController,
   homeSessionSearchKey,
   type HomeSessionGroup,
+  type HomeSessionGroupBy,
+  HOME_SESSION_GROUP_BY,
   type HomeSessionRecord,
   type OpenSessionOptions,
 } from "./controller"
@@ -49,6 +51,8 @@ function isBackgroundOpen(event: MouseEvent) {
 export type HomeSessionsViewProps = {
   language: ReturnType<typeof useLanguage>
   groups: HomeSessionGroup[]
+  groupBy: HomeSessionGroupBy
+  onGroupBy: (by: HomeSessionGroupBy) => void
   loading: boolean
   desktop: boolean
   location: (record: HomeSessionRecord) => { worktree: string; branch: string | undefined }
@@ -117,8 +121,20 @@ export function HomeSessionsView(props: HomeSessionsViewProps) {
           hoveredSession={hover.sessionID}
           onHoverSession={(sessionID) => setHover("sessionID", sessionID)}
         />
+        <div class="pointer-events-none absolute right-0 top-[68px] z-20 flex items-center gap-1 md:top-[84px] lg:top-[108px]">
+          <select
+            data-action="home-group-by"
+            class="pointer-events-auto h-7 rounded bg-transparent px-1 text-13-regular text-text-weak hover:text-text-base"
+            aria-label={props.language.t("home.sessions.groupBy")}
+            value={props.groupBy}
+            onChange={(event) => props.onGroupBy(event.currentTarget.value as HomeSessionGroupBy)}
+          >
+            <For each={HOME_SESSION_GROUP_BY}>
+              {(by) => <option value={by}>{props.language.t(`home.sessions.groupBy.${by}`)}</option>}
+            </For>
+          </select>
         <Show when={props.groups.length > 0 && props.canCreateSession}>
-          <div class="pointer-events-none absolute right-0 top-[68px] z-20 flex md:top-[84px] lg:top-[108px]">
+          <div class="pointer-events-none flex">
             <Button
               data-action="home-new-session"
               variant="ghost-muted"
@@ -131,6 +147,7 @@ export function HomeSessionsView(props: HomeSessionsViewProps) {
             </Button>
           </div>
         </Show>
+        </div>
       </div>
       <div class="pointer-events-none sticky top-[68px] z-40 h-0 -mr-3 md:top-[84px] lg:top-[108px]">
         <div

@@ -3,8 +3,9 @@ import { readFile } from "node:fs/promises"
 import { homedir } from "node:os"
 import { join } from "node:path"
 import type { MainSetup } from "../sdk/main"
-import { CommandCenter } from "./contract"
+import { CommandCenter, type Row } from "./contract"
 import type definition from "./index"
+import { tab, writable } from "./tabs"
 
 const BASE = "https://api.airtable.com/v0/appLcCdYRMLbuEQ7R"
 
@@ -17,7 +18,7 @@ const REQUESTS = "tblVmkhf03V3J0u37"
 // Only text, single-select and date fields are read, and Airtable sends each of those as a string.
 type Fields = Readonly<Record<string, string | undefined>>
 
-type Page = { records?: { id: string; fields: Fields }[]; offset?: string }
+type Page = { records?: { id: string; fields: Fields }[]; offset?: string; id?: string; fields?: Fields }
 
 const text = (value: Fields[string]) => value || undefined
 
@@ -71,6 +72,20 @@ const shell = (argv: string[], signal: AbortSignal) =>
       (error, stdout, stderr) => (error ? reject(new Error(stderr.trim() || error.message)) : resolve(stdout)),
     )
   })
+
+const known = (id: string) => {
+  const value = tab(id)
+  if (!value) throw new Error(`No Command Center tab "${id}"`)
+  return value
+}
+
+// Writes only the fields the tab allows, so the window can't reach the rest of the base.
+const allowed = (id: string, fields: Record<string, string | null>) => {
+  const keys = writable(known(id))
+  const bad = Object.keys(fields).filter((key) => !keys.has(key))
+  if (bad.length) throw new Error(`Not editable here: ${bad.join(", ")}`)
+  return fields
+}
 
 const setup: MainSetup<typeof definition> = (ctx) => {
   ctx.provide(CommandCenter, {
@@ -126,6 +141,33 @@ const setup: MainSetup<typeof definition> = (ctx) => {
     // cheyenne C3: missions live in ~/.cheyenne/missions; the CLI is packages/plugins/workers/mission.ts.
     missions: async (_, caller) => JSON.parse(await shell(["cheyenne-mission", "list", "--json"], caller.signal)),
     approve: async (input, caller) => void (await shell(["cheyenne-mission", "approve", input.id], caller.signal)),
+    rows: async (input, caller) => {
+      const value = known(input.tab)
+      // ponytail: ids go into one OR() formula; Airtable caps formulas near 16k chars, plenty for an event's emails.
+      const ids = input.ids?.filter((id) => /^rec[A-Za-z0-9]{14}$/.test(id))
+      if (ids && !ids.length) return []
+      const params: Record<string, string> = {}
+      const filter = ids ? `OR(${ids.map((id) => `RECORD_ID()='${id}'`).join(",")})` : value.filter
+      if (filter) params.filterByFormula = filter
+      value.sort?.forEach((field, index) => (params[`sort[${index}][field]`] = field))
+      // SAFETY: Airtable sends JSON field values; the narrower Fields type is only how the Today lists read them.
+      return (await list(value.table, params, caller.signal)) as unknown as (typeof Row.Type)[]
+    },
+    update: async (input, caller) => {
+      await call(`${known(input.tab).table}/${input.id}`, caller.signal, {
+        method: "PATCH",
+        body: JSON.stringify({ fields: allowed(input.tab, input.fields), typecast: true }),
+      })
+    },
+    create: async (input, caller) => {
+      const value = known(input.tab)
+      if (!value.create) throw new Error(`Tab "${input.tab}" has no New`)
+      const row = await call(value.table, caller.signal, {
+        method: "POST",
+        body: JSON.stringify({ fields: { ...value.create.fields, [value.create.field]: input.text }, typecast: true }),
+      })
+      return { id: row.id ?? "", fields: row.fields ?? {} } as unknown as typeof Row.Type
+    },
     setStatus: async (input) => {
       await call(`${TASKS}/${input.id}`, ctx.scope.signal, {
         method: "PATCH",
