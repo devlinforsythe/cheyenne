@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import type { SessionInfo } from "@opencode/client/promise"
 import type { LocalProject } from "@/shell/state/layout"
-import { buildHomeSessionRecords, homeSessionLocation } from "./records"
+import { buildHomeSessionRecords, groupByKey, homeSessionLocation } from "./records"
 
 const session = (id: string, directory: string, projectID: string) =>
   ({
@@ -82,4 +82,20 @@ test("homeSessionLocation returns the worktree directory name and branch when kn
     branch: "feature/home",
   })
   expect(homeSessionLocation("/repo/.worktrees/crisp-cactus")).toEqual({ worktree: "crisp-cactus", branch: undefined })
+})
+
+describe("groupByKey", () => {
+  test("groups in first-seen order and keeps session order inside a group", () => {
+    const records = ["a", "b", "c"].map((id, index) => ({
+      session: session(id, "/repo", "p"),
+      project: { worktree: "/repo" } as LocalProject,
+      projectName: index === 1 ? "two" : "one",
+    }))
+    const groups = groupByKey(records, (record) => record.projectName)
+
+    expect(groups.map((group) => [group.title, group.sessions.map((record) => record.session.id)])).toEqual([
+      ["one", ["a", "c"]],
+      ["two", ["b"]],
+    ])
+  })
 })

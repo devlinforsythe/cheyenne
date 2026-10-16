@@ -57,3 +57,13 @@ export function homeProjectForSession<T extends { id?: string; worktree: string;
     ) ?? projects.find((item) => item.id === session.projectID)
   )
 }
+
+// cheyenne 6.0a: project/folder, model and agent group by a key; groups keep the most recent session first.
+export function groupByKey(records: HomeSessionRecord[], key: (record: HomeSessionRecord) => string) {
+  const groups = new Map<string, HomeSessionRecord[]>()
+  for (const record of records) {
+    const name = key(record)
+    groups.set(name, [...(groups.get(name) ?? []), record])
+  }
+  return Array.from(groups, ([title, sessions]) => ({ id: title, title, sessions }))
+}

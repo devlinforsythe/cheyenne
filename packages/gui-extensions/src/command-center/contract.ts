@@ -37,6 +37,12 @@ export const Mission = Schema.Struct({
   ),
 })
 
+/** Any Command Center row (cheyenne 6.0a), fields as Airtable sends them; `tabs.ts` says which to draw. */
+export const Row = Schema.Struct({ id: Schema.String, fields: Schema.Record(Schema.String, Schema.Json) })
+
+/** A write: text or select values, `null` clears the field. Main refuses fields `tabs.ts` doesn't list for the tab. */
+const Fields = Schema.Record(Schema.String, Schema.NullOr(Schema.String))
+
 /**
  * Cheyenne's Command Center: the owner's Airtable base (`appLcCdYRMLbuEQ7R`) and the `brain` briefing. Main reads
  * the Airtable token from the environment or `~/.hermes/.env`, so it never reaches the window.
@@ -52,6 +58,12 @@ export const CommandCenter = Ipc.define({
     brief: { output: Schema.String },
     /** Sets a to-do's Status, e.g. "Done", or back to what it was. */
     setStatus: { input: Schema.Struct({ id: Schema.String, status: Schema.String }) },
+    /** A tab's rows (its filter and sort), or just the rows with these ids. */
+    rows: { input: Schema.Struct({ tab: Schema.String, ids: Schema.optional(Schema.Array(Schema.String)) }), output: Schema.Array(Row) },
+    /** Changes fields on one row of a tab. */
+    update: { input: Schema.Struct({ tab: Schema.String, id: Schema.String, fields: Fields }) },
+    /** Adds a row to a tab: `text` fills its create field, plus the tab's fixed fields. */
+    create: { input: Schema.Struct({ tab: Schema.String, text: Schema.String }), output: Row },
     /** Open missions, newest first. */
     missions: { output: Schema.Array(Mission) },
     /** The owner's go for a mission's current stage: runs its workers (detached). */

@@ -25,8 +25,11 @@ import { usePlatform } from "@/runtime/platform/platform"
 import { sessionLabel, sessionTitle } from "@/session/title"
 import { showToast } from "@/shell/notifications/toast"
 import { archiveHomeSession } from "./archive"
+import { Persist, persisted } from "@/runtime/persistence/storage"
+import { Persistence } from "@/runtime/persistence/schema"
+import { Schema } from "effect"
 import type { HomeController } from "../model"
-import { buildHomeSessionRecords, homeProjectForSession, homeSessionLocation, type HomeSessionRecord } from "./records"
+import { buildHomeSessionRecords, groupByKey, homeProjectForSession, homeSessionLocation, type HomeSessionRecord } from "./records"
 
 export type { HomeSessionRecord } from "./records"
 
@@ -34,10 +37,17 @@ export type { HomeSessionRecord } from "./records"
 const selectSessions = (sessions: SessionInfo[]) => () => sessions
 
 export type HomeSessionGroup = {
-  id: "today" | "yesterday" | "older"
+  id: string
   title: string
   sessions: HomeSessionRecord[]
 }
+
+export const HOME_SESSION_GROUP_BY = ["date", "project", "model", "agent"] as const
+export type HomeSessionGroupBy = (typeof HOME_SESSION_GROUP_BY)[number]
+
+const GroupBySchema = Schema.Struct({
+  by: Persistence.fallback(Schema.Literals(HOME_SESSION_GROUP_BY), () => "date" as const),
+})
 
 export type OpenSessionOptions = { background?: boolean }
 
@@ -101,7 +111,8 @@ export function createHomeSessionsController(home: HomeController) {
   )
 
   const records = createMemo(() => allRecords().slice(0, HOME_SESSION_LIMIT))
-  const groups = createMemo(() => groupSessions(records(), language))
+  const [groupBy, setGroupBy] = persisted(Persist.global("home.sessions.groupBy"), GroupBySchema, { by: "date" })
+  const groups = createMemo(() => groupSessions(records(), language, groupBy.by))
   const prefetched = new Set<string>()
 
   const location = (record: HomeSessionRecord) => {
@@ -304,6 +315,8 @@ export function createHomeSessionsController(home: HomeController) {
     data: {
       records,
       groups,
+      groupBy: () => groupBy.by,
+      setGroupBy: (by: HomeSessionGroupBy) => setGroupBy({ by }),
       loading: () => sessionLoad.isPending,
       searchRecords: allRecords,
     },
@@ -404,7 +417,15 @@ function localDay(date: Date) {
   return date.getFullYear() * 10_000 + date.getMonth() * 100 + date.getDate()
 }
 
-function groupSessions(records: HomeSessionRecord[], language: ReturnType<typeof useLanguage>): HomeSessionGroup[] {
+function groupSessions(
+  records: HomeSessionRecord[],
+  language: ReturnType<typeof useLanguage>,
+  by: HomeSessionGroupBy = "date",
+): HomeSessionGroup[] {
+  const none = language.t("home.sessions.group.none")
+  if (by === "project") return groupByKey(records, (record) => record.projectName)
+  if (by === "model") return groupByKey(records, (record) => record.session.model?.id ?? none)
+  if (by === "agent") return groupByKey(records, (record) => record.session.agent ?? none)
   const now = new Date()
   const today = localDay(now)
   const yesterday = localDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1))
@@ -419,9 +440,9 @@ function groupSessions(records: HomeSessionRecord[], language: ReturnType<typeof
       : language.t("home.sessions.group.older")
 
   return [
-    { id: "today" as const, title: language.t("home.sessions.group.today"), sessions: todaySessions },
-    { id: "yesterday" as const, title: language.t("home.sessions.group.yesterday"), sessions: yesterdaySessions },
-    { id: "older" as const, title: olderTitle, sessions: olderSessions },
+    { id: "today", title: language.t("home.sessions.group.today"), sessions: todaySessions },
+    { id: "yesterday", title: language.t("home.sessions.group.yesterday"), sessions: yesterdaySessions },
+    { id: "older", title: olderTitle, sessions: olderSessions },
   ].filter((group) => group.sessions.length > 0)
 }
 

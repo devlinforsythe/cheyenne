@@ -519,6 +519,12 @@ export const dict = {
   "home.sessions.group.today": "Today",
   "home.sessions.group.yesterday": "Yesterday",
   "home.sessions.group.older": "Older",
+  "home.sessions.group.none": "Not set",
+  "home.sessions.groupBy": "Group sessions by",
+  "home.sessions.groupBy.date": "Date",
+  "home.sessions.groupBy.project": "Project / folder",
+  "home.sessions.groupBy.model": "Model",
+  "home.sessions.groupBy.agent": "Agent",
   "home.providerTip": "Connect to 75+ providers to use other models, including Claude, GPT, Gemini, etc",
   "home.workspaceTip": "Start next session in a new workspace to keep changes isolated",
 
