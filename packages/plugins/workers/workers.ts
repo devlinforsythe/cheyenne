@@ -36,7 +36,8 @@ export const run = (argv: readonly string[], cwd: string, signal: AbortSignal | 
     child.stdout.setEncoding("utf8").on("data", onData)
     child.stderr.setEncoding("utf8").on("data", onData)
     child.on("error", reject)
-    child.on("close", (code) => resolve(code ?? 1))
+    // codex traps the timeout's SIGTERM and exits 0, so a killed child counts as a failure (124, as timeout(1)).
+    child.on("close", (code) => resolve(child.killed ? 124 : (code ?? 1)))
   })
 
 export const tail = (text: string, size = TAIL) => (text.length > size ? "…" + text.slice(-size) : text)
