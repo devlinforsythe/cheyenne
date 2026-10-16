@@ -164,3 +164,16 @@ the new tools: `image_generate` on FAL `fal-ai/flux/dev` (session "C4 imagegen p
   `root@192.168.1.200:/tank/media-assets/gandalf-desktop` (9,303 files + 38 symlinks, SHA-256 compared,
   `fetch-from-r630.sh` left behind) and `com.gandalf.sync` unloaded with its plist kept. Inventory and verdicts:
   `~/gandalf/CHEYENNE-PLAN.md` § C4 inventory.
+
+## C5 — Hostinger, tailnet only (2026-10-15)
+
+No code change. The VPS (`srv1535715`) runs the stock `@opencode/cli-linux-x64` build the desktop bundles, as
+systemd `cheyenne.service`, user `cheyenne`, bound to its Tailscale IP only:
+`opencode serve --hostname 100.98.225.126 --port 4096`.
+- The password comes from `/etc/cheyenne/env` (600). `serve` reads `OPENCODE_SERVER_PASSWORD` / `OPENCODE_PASSWORD`, and a
+  client passes `OPENCODE_PASSWORD` with `--server`.
+- The client sends its own working folder as the session location, so `run --server` must be started from a folder that
+  exists on the server.
+- `/api/*` returns 401 without the password. Non-API paths serve the static web UI shell.
+- ufw is default-deny (tailscale0, 80/443 for the existing n8n, 41641/udp). Public SSH is closed and SSH is key-only. No
+  worker CLIs and no plugins on the box. Checklist and proof: `~/gandalf/CHEYENNE-PLAN.md` § C5.
