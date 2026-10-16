@@ -72,6 +72,22 @@ Every edited code line carries a `// cheyenne` comment, so `git grep -n "// chey
   - Command Center: a Missions section (stage chips; Approve/Retry on the waiting or failed stage; refresh every
     5 s) via two new Ipc methods `missions` / `approve` (contract, main, i18n, panel; all inside `command-center/`).
 
+- `packages/plugins/media/` — Gandalf's image generation and brand LoRAs (C4), no core edits. `media.ts` is a
+  stdlib-only TS port of `~/gandalf/bin/gandalf-imagegen` + the use side of `gandalf-lora`; `index.ts` adds the
+  server tools `image_generate(prompt, brand?, provider?, model?, lora?, lora_scale?, n?, size?, image?, strength?,
+  name?)` and `lora_list()`. Providers: `fal` (Flux, Gandalf's active provider) and `google` (Gemini image). A
+  `lora` forces FAL `fal-ai/flux-lora` and prepends its trigger word; `image` routes to `/image-to-image`.
+  **Keys and brand data stay in Gandalf:** `GOOGLE_AI_API_KEY` / `FAL_KEY` / `GANDALF_IMAGE_PROVIDER` /
+  `GANDALF_IMAGE_MODEL` from the environment, else `~/gandalf/.env` (gitignored); LoRA refs from
+  `~/gandalf/brand_context/<brand>/loras/*.json`. Images land in `~/.cheyenne/media/<brand>/`. Nothing committed.
+  Loaded the same way as workers: `"plugins": [".../plugins/workers", ".../plugins/media"]` in
+  `~/.config/opencode/opencode.jsonc`, applied with `opencode-cli reload` (no service restart).
+  - The `.env` model id is applied only to the `.env` provider (Gandalf applied `fal-ai/flux/dev` to google too → 404).
+  - Tool `metadata` must be plain JSON: a `lora: undefined` field made the server drop the whole result (tool stuck
+    "running", model saw "Tool result missing") while the image was written; it is JSON round-tripped now.
+  - LoRA training stays the Gandalf CLI (`~/gandalf/bin/gandalf-lora train`); `bun media.ts loras|generate` runs
+    the engine from a terminal.
+
 ## Build (macOS arm64, unsigned)
 
 ```bash
@@ -137,3 +153,14 @@ through the worker runner in the `c3-smoke` mission (78 s) and through `run_work
 
 In-app copy that says "OpenCode" (i18n strings, About, onboarding), the big `opencode` wordmark on the empty
 session screen, the `opencode://` scheme, typography (white condensed capitals). Left for later so the patch stays thin.
+
+`docs/c4-proof.jpg` (C4): three images generated from Cheyenne sessions (`opencode-cli run`, GPT-5.6 Sol) through
+the new tools: `image_generate` on FAL `fal-ai/flux/dev` (session "C4 imagegen proof"), `lora_list` +
+`image_generate lora=wolfe-standard` ("C4 LoRA proof"), and `lora=studio84-panel` on the app's background service
+("C4 imagegen proof (service)").
+- `provider=google` reaches Gemini but this key's free tier allows 0 image requests (429 on
+  `gemini-2.5-flash-image`); it needs billing on the Google AI key before it works. FAL is the default.
+- Gandalf retired the same day (owner yes to both): `~/gandalf/desktop` moved to
+  `root@192.168.1.200:/tank/media-assets/gandalf-desktop` (9,303 files + 38 symlinks, SHA-256 compared,
+  `fetch-from-r630.sh` left behind) and `com.gandalf.sync` unloaded with its plist kept. Inventory and verdicts:
+  `~/gandalf/CHEYENNE-PLAN.md` § C4 inventory.

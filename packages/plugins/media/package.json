@@ -1,0 +1,15 @@
+{
+  "name": "@cheyenne/plugin-media",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Cheyenne image_generate + lora_list tools: Google / FAL image generation and the brand LoRAs, ported from Gandalf",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./index.ts",
+    "./server": "./index.ts"
+  },
+  "peerDependencies": {
+    "@opencode/plugin": "^2.0.27 || ^0.0.0-dev"
+  }
+}
