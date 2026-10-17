@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { secret, shipstationRow, shopifyRow } from "./stores"
+import { reverbRow, secret, shipstationRow, shopifyRow } from "./stores"
 import { TABS, writable } from "./tabs"
 
 test("a Shopify order becomes a row with an admin link", () => {
@@ -36,9 +36,29 @@ test("a ShipStation order becomes a row", () => {
   expect(row).toMatchObject({ id: "9", fields: { Order: "#1042 · $349.00", "Ship to": "A Buyer · Tulsa, OK", Items: "1 × Chef 8in" } })
 })
 
+test("a Reverb order becomes a row with its web link", () => {
+  const row = reverbRow({
+    order_number: "123456",
+    created_at: "2026-10-15T10:00:00-05:00",
+    title: "Wolfe Chef 8in",
+    quantity: 1,
+    sku: "WC-8",
+    status: "paid",
+    buyer_name: "A Buyer",
+    total: { amount: "349.00", currency: "USD" },
+    shipping_address: { name: null, locality: "Tulsa", region: "OK" },
+    _links: { web: { href: "https://reverb.com/my/selling/orders/123456" } },
+  })
+  expect(row).toMatchObject({
+    id: "123456",
+    fields: { Order: "#123456 · $349.00", "Ship to": "A Buyer · Tulsa, OK", Items: "1 × Wolfe Chef 8in (WC-8)" },
+  })
+})
+
 test("store tabs allow no writes", () => {
   expect(writable(TABS.shopify).size).toBe(0)
   expect(writable(TABS.shipstation).size).toBe(0)
+  expect(writable(TABS.reverb).size).toBe(0)
 })
 
 test("a missing credential names where to put it", async () => {
