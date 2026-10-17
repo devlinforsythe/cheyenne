@@ -4,6 +4,8 @@
 
 export type Tab = {
   table: string
+  /** cheyenne 6.0b: read from a store (stores.ts) instead of Airtable; such a tab has no status/edit/create. */
+  source?: "shopify" | "shipstation"
   title: string
   filter?: string
   sort?: string[]
@@ -102,6 +104,20 @@ export const TABS = {
     body: ["Claude's reply"],
     status: { field: "Status", choices: ["New", "In progress", "Needs your answer", "Done", "Declined"] },
     create: { field: "Request", fields: { Status: "New", From: "Devlin (Cheyenne)" } },
+  },
+  shopify: {
+    table: "",
+    source: "shopify",
+    title: "Order",
+    meta: ["Date", "Payment", "Fulfillment", "Link"],
+    body: ["Items", "Note"],
+  },
+  shipstation: {
+    table: "",
+    source: "shipstation",
+    title: "Order",
+    meta: ["Date", "Ship to", "Service"],
+    body: ["Items", "Note"],
   },
 } satisfies Record<string, Tab>
 
