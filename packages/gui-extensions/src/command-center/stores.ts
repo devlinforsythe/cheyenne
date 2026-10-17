@@ -74,11 +74,11 @@ export const shopifyRow = (order: ShopifyOrder, store: string): Row => ({
 
 // A Dev Dashboard app gives a client ID + secret, not a token: trade them for a 24 h token (client credentials grant)
 // and keep it until a minute before it runs out. A SHOPIFY_TOKEN (old-style custom app) is used as is.
-let minted: { token: string; until: number } | undefined
-const shopifyToken = async (shop: string, signal: AbortSignal) => {
+type Minted = { token: string; until: number }
+const shopifyToken = async (shop: string, signal: AbortSignal, minted: Minted) => {
   const fixed = await secret("SHOPIFY_TOKEN").catch(() => "")
   if (fixed) return fixed
-  if (minted && minted.until > Date.now()) return minted.token
+  if (minted.until > Date.now()) return minted.token
   const response = await fetch(`https://${shop}/admin/oauth/access_token`, {
     method: "POST",
     signal,
@@ -92,20 +92,20 @@ const shopifyToken = async (shop: string, signal: AbortSignal) => {
   if (!response.ok) throw new Error(`Shopify token ${response.status}: ${(await response.text()).slice(0, 200)}`)
   // SAFETY: Shopify's access_token answer is { access_token, scope, expires_in }.
   const body = (await response.json()) as { access_token: string; expires_in?: number }
-  minted = { token: body.access_token, until: Date.now() + ((body.expires_in ?? 86400) - 60) * 1000 }
+  Object.assign(minted, { token: body.access_token, until: Date.now() + ((body.expires_in ?? 86400) - 60) * 1000 })
   return minted.token
 }
 
 // Open, unfulfilled orders from the last 30 days, newest first. The date bound keeps out the 2026-10-06 Matrixify
 // import of old TKC orders (`#NNNN-tkc`), which are dated back to 2017.
-const shopify = async (signal: AbortSignal) => {
+const shopify = async (signal: AbortSignal, minted: Minted) => {
   const shop = await secret("SHOPIFY_SHOP").catch(() => "wolfe-cutlery.myshopify.com")
   const version = await secret("SHOPIFY_API_VERSION").catch(() => "2026-01")
   const since = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10)
   const response = await fetch(`https://${shop}/admin/api/${version}/graphql.json`, {
     method: "POST",
     signal,
-    headers: { "X-Shopify-Access-Token": await shopifyToken(shop, signal), "Content-Type": "application/json" },
+    headers: { "X-Shopify-Access-Token": await shopifyToken(shop, signal, minted), "Content-Type": "application/json" },
     body: JSON.stringify({
       query: ORDERS,
       variables: { query: `status:open fulfillment_status:unfulfilled created_at:>=${since}` },
@@ -159,4 +159,8 @@ const shipstation = async (signal: AbortSignal) => {
   return rows
 }
 
-export const stores: Record<Source, (signal: AbortSignal) => Promise<Row[]>> = { shopify, shipstation }
+// Made in main's setup, so the minted Shopify token lives with the extension, not the module.
+export const stores = (): Record<Source, (signal: AbortSignal) => Promise<Row[]>> => {
+  const minted: Minted = { token: "", until: 0 }
+  return { shopify: (signal) => shopify(signal, minted), shipstation }
+}

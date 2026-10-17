@@ -89,6 +89,7 @@ const allowed = (id: string, fields: Record<string, string | null>) => {
 }
 
 const setup: MainSetup<typeof definition> = (ctx) => {
+  const store = stores() // cheyenne 6.0b
   ctx.provide(CommandCenter, {
     airtable: async (_, caller) => {
       const [todos, events, requests] = await Promise.all([
@@ -144,7 +145,7 @@ const setup: MainSetup<typeof definition> = (ctx) => {
     approve: async (input, caller) => void (await shell(["cheyenne-mission", "approve", input.id], caller.signal)),
     rows: async (input, caller) => {
       const value = known(input.tab)
-      if (value.source) return stores[value.source](caller.signal)
+      if (value.source) return store[value.source](caller.signal)
       // ponytail: ids go into one OR() formula; Airtable caps formulas near 16k chars, plenty for an event's emails.
       const ids = input.ids?.filter((id) => /^rec[A-Za-z0-9]{14}$/.test(id))
       if (ids && !ids.length) return []
