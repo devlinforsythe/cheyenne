@@ -5,7 +5,7 @@
 export type Tab = {
   table: string
   /** cheyenne 6.0b: read from a store (stores.ts) instead of Airtable; such a tab has no status/edit/create. */
-  source?: "shopify" | "shipstation"
+  source?: "shopify" | "shipstation" | "reverb" // cheyenne 6.0c: reverb
   title: string
   filter?: string
   sort?: string[]
@@ -118,6 +118,14 @@ export const TABS = {
     title: "Order",
     meta: ["Date", "Ship to", "Service"],
     body: ["Items", "Note"],
+  },
+  // cheyenne 6.0c
+  reverb: {
+    table: "",
+    source: "reverb",
+    title: "Order",
+    meta: ["Date", "Ship to", "Status", "Link"],
+    body: ["Items"],
   },
 } satisfies Record<string, Tab>
 

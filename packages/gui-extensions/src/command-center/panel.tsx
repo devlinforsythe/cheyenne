@@ -10,7 +10,7 @@ import { createLatest, useExtension, type IpcClient, type Live } from "../sdk"
 import type { CommandCenter } from "./contract"
 
 // cheyenne 6.0a: Today is the original panel; the rest are the base's tables (tabs.ts).
-const TABS = ["today", "tasks", "projects", "decisions", "events", "travel", "accounts", "ask", "shopify", "shipstation"] as const
+const TABS = ["today", "tasks", "projects", "decisions", "events", "travel", "accounts", "ask", "shopify", "shipstation", "reverb"] as const // cheyenne 6.0c: reverb
 
 const TableView = lazy(() => import("./table"))
 

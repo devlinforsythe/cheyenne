@@ -27,6 +27,7 @@ export default {
   "tab.ask": "Ask Claude",
   "tab.shopify": "Shopify",
   "tab.shipstation": "ShipStation",
+  "tab.reverb": "Reverb", // cheyenne 6.0c
   "error.load": "Did not load: {{message}}",
   "new.tasks": "New task…",
   "new.projects": "New project…",

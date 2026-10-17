@@ -192,3 +192,11 @@ Command Center gets two store tabs beside the Airtable ones. `tabs.ts` marks the
 - Credential lookup, in main only: environment, then a `NAME=` line in `~/.config/wolfe-sync/env`, then the Keychain
   (service = NAME). A missing one shows "Did not load: NAME is not set…" in the tab.
 - Check: `bun test src/command-center/stores.test.ts` in `packages/gui-extensions`.
+
+## 6.0c — read-only Reverb tab (2026-10-16)
+
+A third store tab, same pattern as 6.0b (`source: "reverb"`, no status/edit/create, GETs only).
+- **Reverb** (API v3, `Accept-Version: 3.0`): every order awaiting shipment
+  (`/api/my/orders/selling/awaiting_shipment`, following `_links.next`). Needs `REVERB_TOKEN`: a personal token from
+  reverb.com → Settings → API & Integrations with only the `read_orders` scope. One row per order (Reverb orders hold
+  one listing), linked to the order's web page.

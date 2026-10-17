@@ -6,7 +6,7 @@ import { readFile } from "node:fs/promises"
 import { homedir } from "node:os"
 import { join } from "node:path"
 
-export type Source = "shopify" | "shipstation"
+export type Source = "shopify" | "shipstation" | "reverb"
 
 type Row = { id: string; fields: Record<string, string> }
 
@@ -159,8 +159,58 @@ const shipstation = async (signal: AbortSignal) => {
   return rows
 }
 
+type ReverbOrder = {
+  order_number: string
+  created_at: string
+  title: string
+  quantity: number
+  sku: string | null
+  status: string
+  buyer_name: string | null
+  total: { amount: string; currency: string }
+  shipping_address: { name: string | null; locality: string | null; region: string | null } | null
+  _links?: { web?: { href: string } }
+}
+
+// cheyenne 6.0c
+export const reverbRow = (order: ReverbOrder): Row => ({
+  id: order.order_number,
+  fields: {
+    Order: `#${order.order_number} · ${money(order.total.amount, order.total.currency)}`,
+    Date: day(order.created_at),
+    "Ship to": [
+      order.shipping_address?.name ?? order.buyer_name,
+      [order.shipping_address?.locality, order.shipping_address?.region].filter(Boolean).join(", "),
+    ]
+      .filter(Boolean)
+      .join(" · "),
+    Status: status(order.status),
+    Link: order._links?.web?.href ?? `https://reverb.com/my/selling/orders/${order.order_number}`,
+    Items: `${order.quantity} × ${order.title}${order.sku ? ` (${order.sku})` : ""}`,
+  },
+})
+
+// Reverb API v3, personal token (read_orders scope): every order awaiting shipment, following _links.next.
+const reverb = async (signal: AbortSignal) => {
+  const headers = {
+    Authorization: `Bearer ${await secret("REVERB_TOKEN")}`,
+    Accept: "application/hal+json",
+    "Accept-Version": "3.0",
+  }
+  const rows: Row[] = []
+  for (let url: string | undefined = "https://api.reverb.com/api/my/orders/selling/awaiting_shipment?per_page=50"; url; ) {
+    const response = await fetch(url, { signal, headers })
+    if (!response.ok) throw new Error(`Reverb ${response.status}: ${(await response.text()).slice(0, 200)}`)
+    // SAFETY: Reverb's order list answers { orders, _links: { next? } }.
+    const body = (await response.json()) as { orders?: ReverbOrder[]; _links?: { next?: { href: string } } }
+    rows.push(...(body.orders ?? []).map(reverbRow))
+    url = body._links?.next?.href
+  }
+  return rows
+}
+
 // Made in main's setup, so the minted Shopify token lives with the extension, not the module.
 export const stores = (): Record<Source, (signal: AbortSignal) => Promise<Row[]>> => {
   const minted: Minted = { token: "", until: 0 }
-  return { shopify: (signal) => shopify(signal, minted), shipstation }
+  return { shopify: (signal) => shopify(signal, minted), shipstation, reverb }
 }
