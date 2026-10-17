@@ -187,7 +187,7 @@ Command Center gets two store tabs beside the Airtable ones. `tabs.ts` marks the
   Admin GraphQL `SHOPIFY_API_VERSION` (default `2026-01`) on `SHOPIFY_SHOP` (default `wolfe-cutlery.myshopify.com`). The
   token is `SHOPIFY_TOKEN` (read_orders) if set, else a 24 h token minted from the Dev Dashboard app's
   `SHOPIFY_CLIENT_ID` + `SHOPIFY_CLIENT_SECRET` (client credentials grant), kept in memory until it expires. No customer or product fields: the token has no read_customers / read_products.
-- **ShipStation** (API v1, Basic auth): orders awaiting shipment, first page of 100. Needs `SHIPSTATION_API_KEY` and
+- **ShipStation** (API v1, Basic auth): every order awaiting shipment, 500 a page. Needs `SHIPSTATION_API_KEY` and
   `SHIPSTATION_API_SECRET`.
 - Credential lookup, in main only: environment, then a `NAME=` line in `~/.config/wolfe-sync/env`, then the Keychain
   (service = NAME). A missing one shows "Did not load: NAME is not set…" in the tab.

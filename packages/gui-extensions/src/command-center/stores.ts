@@ -141,18 +141,22 @@ export const shipstationRow = (order: ShipStationOrder): Row => ({
   },
 })
 
-// ShipStation API v1 (key + secret, Basic auth): orders awaiting shipment, newest first.
-// ponytail: first page of 100 only; page through `pages` if the queue ever runs longer.
+// ShipStation API v1 (key + secret, Basic auth): every order awaiting shipment, newest first, 500 a page (the max).
 const shipstation = async (signal: AbortSignal) => {
   const auth = Buffer.from(`${await secret("SHIPSTATION_API_KEY")}:${await secret("SHIPSTATION_API_SECRET")}`).toString("base64")
-  const response = await fetch(
-    "https://ssapi.shipstation.com/orders?orderStatus=awaiting_shipment&sortBy=OrderDate&sortDir=DESC&pageSize=100",
-    { signal, headers: { Authorization: `Basic ${auth}` } },
-  )
-  if (!response.ok) throw new Error(`ShipStation ${response.status}: ${(await response.text()).slice(0, 200)}`)
-  // SAFETY: ShipStation's List Orders answers { orders, total, page, pages }.
-  const body = (await response.json()) as { orders?: ShipStationOrder[] }
-  return (body.orders ?? []).map(shipstationRow)
+  const rows: Row[] = []
+  for (let page = 1, pages = 1; page <= pages; page++) {
+    const response = await fetch(
+      `https://ssapi.shipstation.com/orders?orderStatus=awaiting_shipment&sortBy=OrderDate&sortDir=DESC&pageSize=500&page=${page}`,
+      { signal, headers: { Authorization: `Basic ${auth}` } },
+    )
+    if (!response.ok) throw new Error(`ShipStation ${response.status}: ${(await response.text()).slice(0, 200)}`)
+    // SAFETY: ShipStation's List Orders answers { orders, total, page, pages }.
+    const body = (await response.json()) as { orders?: ShipStationOrder[]; pages?: number }
+    rows.push(...(body.orders ?? []).map(shipstationRow))
+    pages = body.pages ?? 1
+  }
+  return rows
 }
 
 export const stores: Record<Source, (signal: AbortSignal) => Promise<Row[]>> = { shopify, shipstation }
