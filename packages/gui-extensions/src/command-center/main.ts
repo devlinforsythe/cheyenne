@@ -5,6 +5,7 @@ import { join } from "node:path"
 import type { MainSetup } from "../sdk/main"
 import { CommandCenter, type Row } from "./contract"
 import type definition from "./index"
+import { stores } from "./stores"
 import { tab, writable } from "./tabs"
 
 const BASE = "https://api.airtable.com/v0/appLcCdYRMLbuEQ7R"
@@ -143,6 +144,7 @@ const setup: MainSetup<typeof definition> = (ctx) => {
     approve: async (input, caller) => void (await shell(["cheyenne-mission", "approve", input.id], caller.signal)),
     rows: async (input, caller) => {
       const value = known(input.tab)
+      if (value.source) return stores[value.source](caller.signal)
       // ponytail: ids go into one OR() formula; Airtable caps formulas near 16k chars, plenty for an event's emails.
       const ids = input.ids?.filter((id) => /^rec[A-Za-z0-9]{14}$/.test(id))
       if (ids && !ids.length) return []

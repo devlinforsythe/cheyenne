@@ -108,7 +108,7 @@ export default function TableView(props: { center: Accessor<Live<Client>>; tab: 
       </Show>
 
       <Show when={rows.error}>
-        <div class="px-5 py-3 text-13-regular text-text-danger-base">{ctx.t("error.airtable", { message: message(rows.error) })}</div>
+        <div class="px-5 py-3 text-13-regular text-text-danger-base">{ctx.t(config().source ? "error.load" : "error.airtable", { message: message(rows.error) })}</div>
       </Show>
 
       <For each={rows.latest} fallback={<span class="px-5 py-3 text-13-regular text-text-weak">{ctx.t(rows.loading ? "loading" : "empty")}</span>}>
