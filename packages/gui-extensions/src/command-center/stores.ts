@@ -72,6 +72,30 @@ export const shopifyRow = (order: ShopifyOrder, store: string): Row => ({
   },
 })
 
+// A Dev Dashboard app gives a client ID + secret, not a token: trade them for a 24 h token (client credentials grant)
+// and keep it until a minute before it runs out. A SHOPIFY_TOKEN (old-style custom app) is used as is.
+let minted: { token: string; until: number } | undefined
+const shopifyToken = async (shop: string, signal: AbortSignal) => {
+  const fixed = await secret("SHOPIFY_TOKEN").catch(() => "")
+  if (fixed) return fixed
+  if (minted && minted.until > Date.now()) return minted.token
+  const response = await fetch(`https://${shop}/admin/oauth/access_token`, {
+    method: "POST",
+    signal,
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "client_credentials",
+      client_id: await secret("SHOPIFY_CLIENT_ID"),
+      client_secret: await secret("SHOPIFY_CLIENT_SECRET"),
+    }),
+  })
+  if (!response.ok) throw new Error(`Shopify token ${response.status}: ${(await response.text()).slice(0, 200)}`)
+  // SAFETY: Shopify's access_token answer is { access_token, scope, expires_in }.
+  const body = (await response.json()) as { access_token: string; expires_in?: number }
+  minted = { token: body.access_token, until: Date.now() + ((body.expires_in ?? 86400) - 60) * 1000 }
+  return minted.token
+}
+
 // Open, unfulfilled orders from the last 30 days, newest first. The date bound keeps out the 2026-10-06 Matrixify
 // import of old TKC orders (`#NNNN-tkc`), which are dated back to 2017.
 const shopify = async (signal: AbortSignal) => {
@@ -81,7 +105,7 @@ const shopify = async (signal: AbortSignal) => {
   const response = await fetch(`https://${shop}/admin/api/${version}/graphql.json`, {
     method: "POST",
     signal,
-    headers: { "X-Shopify-Access-Token": await secret("SHOPIFY_TOKEN"), "Content-Type": "application/json" },
+    headers: { "X-Shopify-Access-Token": await shopifyToken(shop, signal), "Content-Type": "application/json" },
     body: JSON.stringify({
       query: ORDERS,
       variables: { query: `status:open fulfillment_status:unfulfilled created_at:>=${since}` },
