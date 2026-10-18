@@ -64,10 +64,14 @@ const list = async (table: string, params: Record<string, string>, signal: Abort
 
 // A login shell, so the app finds ~/bin (brain, cheyenne-mission) and their runtimes like the owner's terminal does.
 // Arguments go in as $0 "$@", never into the script.
+// cheyenne linux: zsh on macOS; elsewhere the login shell when it is bash or zsh (same -lc contract), else bash.
+const LOGIN_SHELL =
+  process.platform === "darwin" ? "/bin/zsh" : /\/(ba|z)sh$/.test(process.env.SHELL ?? "") ? process.env.SHELL! : "/bin/bash"
+
 const shell = (argv: string[], signal: AbortSignal) =>
   new Promise<string>((resolve, reject) => {
     execFile(
-      "/bin/zsh",
+      LOGIN_SHELL,
       ["-lc", 'exec "$0" "$@"', ...argv],
       { signal, maxBuffer: 4 * 1024 * 1024 },
       (error, stdout, stderr) => (error ? reject(new Error(stderr.trim() || error.message)) : resolve(stdout)),

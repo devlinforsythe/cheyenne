@@ -12,21 +12,28 @@ type Row = { id: string; fields: Record<string, string> }
 
 const ENV = join(homedir(), ".config", "wolfe-sync", "env")
 
+// cheyenne linux: the macOS Keychain through security(1); elsewhere the libsecret keyring through secret-tool
+// (service = name), which resolves "" when the tool or the entry is missing.
+const mac = process.platform === "darwin"
+
 const keychain = (name: string) =>
   new Promise<string>((resolve) =>
-    execFile("/usr/bin/security", ["find-generic-password", "-s", name, "-w"], (error, stdout) =>
-      resolve(error ? "" : stdout.trim()),
+    execFile(
+      mac ? "/usr/bin/security" : "secret-tool",
+      mac ? ["find-generic-password", "-s", name, "-w"] : ["lookup", "service", name],
+      (error, stdout) => resolve(error ? "" : stdout.trim()),
     ),
   )
 
-// A credential from the environment, else its line in ~/.config/wolfe-sync/env, else the Keychain (service = name).
+// A credential from the environment, else its line in ~/.config/wolfe-sync/env, else the keychain (service = name).
 // It stays in main; errors name where to put it, never the value.
 export const secret = async (name: string) => {
   if (process.env[name]) return process.env[name]
   const env = await readFile(ENV, "utf8").catch(() => "")
   const line = env.split("\n").find((item) => item.startsWith(`${name}=`))
   const value = line?.slice(name.length + 1).trim().replace(/^["']|["']$/g, "") || (await keychain(name))
-  if (!value) throw new Error(`${name} is not set: add it to ~/.config/wolfe-sync/env or the Keychain (service "${name}")`)
+  const store = mac ? "the Keychain" : "the keyring (secret-tool)" // cheyenne linux
+  if (!value) throw new Error(`${name} is not set: add it to ~/.config/wolfe-sync/env or ${store} (service "${name}")`)
   return value
 }
 

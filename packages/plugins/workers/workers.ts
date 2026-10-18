@@ -25,9 +25,13 @@ const TAIL = 20_000 // characters of output kept for the live view and the resul
 // The desktop server starts without the login shell's PATH (~/bin, ~/.local/bin, ~/.grok/bin),
 // so every command goes through `zsh -lc`. The command and arguments are passed as $0 "$@",
 // never spliced into the script, so the brief cannot inject shell syntax.
+// cheyenne linux: zsh on macOS; elsewhere the login shell when it is bash or zsh (same -lc contract), else bash.
+export const LOGIN_SHELL =
+  process.platform === "darwin" ? "/bin/zsh" : /\/(ba|z)sh$/.test(process.env.SHELL ?? "") ? process.env.SHELL! : "/bin/bash"
+
 export const run = (argv: readonly string[], cwd: string, signal: AbortSignal | undefined, onData: (text: string) => void) =>
   new Promise<number>((resolve, reject) => {
-    const child = spawn("/bin/zsh", ["-lc", 'exec "$0" "$@"', ...argv], {
+    const child = spawn(LOGIN_SHELL, ["-lc", 'exec "$0" "$@"', ...argv], {
       cwd,
       stdio: ["ignore", "pipe", "pipe"],
       signal,

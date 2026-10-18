@@ -222,6 +222,7 @@ export function getConfig() {
         ...base,
         appId,
         productName: "Cheyenne", // cheyenne
+        artifactName: "cheyenne-${os}-${arch}.${ext}", // cheyenne
         deb: { fpm: [metainfoFpm(appId)] },
         rpm: { packageName: "opencode-dev", fpm: [metainfoFpm(appId)] },
       }
