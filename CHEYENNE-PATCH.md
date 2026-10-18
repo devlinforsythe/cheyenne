@@ -200,3 +200,78 @@ A third store tab, same pattern as 6.0b (`source: "reverb"`, no status/edit/crea
   (`/api/my/orders/selling/awaiting_shipment`, following `_links.next`). Needs `REVERB_TOKEN`: a personal token from
   reverb.com → Settings → API & Integrations with only the `read_orders` scope. One row per order (Reverb orders hold
   one listing), linked to the order's web page.
+
+## Linux x86_64 (branch `cheyenne-linux`, 2026-10-18)
+
+Built and installed on the Omarchy laptop (`devlin@100.97.238.80`, Arch, Hyprland, AMD x86_64, no sudo) ahead of the
+owner's move to a Linux daily machine (brain workstream `infra/workstation-os`). Upstream OpenCode already packages
+for Linux; the Cheyenne patch itself had four macOS assumptions, fixed with `// cheyenne linux` markers:
+
+| File | Change |
+|---|---|
+| `packages/gui-extensions/src/command-center/index.ts` | `os: ["macos", "linux"]` (the extension was registered for macOS only) |
+| `packages/gui-extensions/src/command-center/stores.ts` | credential fallback: macOS Keychain via `security`; elsewhere the libsecret keyring via `secret-tool lookup service <NAME>`; the error names the right store |
+| `packages/gui-extensions/src/command-center/main.ts` | `LOGIN_SHELL`: `/bin/zsh` on macOS, else `$SHELL` when it is bash or zsh (same `-lc 'exec "$0" "$@"'` contract), else `/bin/bash` |
+| `packages/plugins/workers/workers.ts` | the same `LOGIN_SHELL` rule for `run_worker` / missions (exported) |
+| `packages/desktop/scripts/copy-metainfo.ts` | dev channel metainfo id/name = `com.devlinforsythe.cheyenne` / Cheyenne, so deb/rpm find the file `electron-builder.config.ts` references |
+| `packages/desktop/electron-builder.config.ts` | dev `artifactName: cheyenne-${os}-${arch}.${ext}` |
+
+Every other macOS-specific line is upstream's and already guarded by `process.platform` (`appearance.ts` titlebar /
+traffic lights, `menu.ts`, `desktop-cli.ts` "CLI installation requires macOS", `prebuild` codesign). Not fixed, and
+not Linux regressions: the window title reads "OpenCode" because the renderer's `document.title` overrides the
+`title: "Cheyenne"` option on every platform (see "Not branded yet"); notifications use Electron's `Notification`,
+which is libnotify on Linux (`notify-send` is installed) — not exercised.
+
+### Build (Linux x86_64, unsigned)
+
+```bash
+export PATH=$HOME/.local/share/mise/shims:$PATH      # bun 1.4.3, node 26 via mise on the laptop
+cd ~/cheyenne && bun install                          # ~2.5 min, 2155 packages
+cd packages/desktop
+export OPENCODE_CHANNEL=dev CSC_IDENTITY_AUTO_DISCOVERY=false
+bun run prebuild && bun run build                     # prebuild fetches @opencode/cli-linux-x64-baseline@dev (0.0.0-dev-21146)
+bunx electron-builder --linux AppImage tar.gz --x64 --config electron-builder.config.ts
+# dist/cheyenne-linux-x86_64.AppImage (304 MB), dist/cheyenne-linux-x64.tar.gz (290 MB), dist/linux-unpacked/
+```
+
+Whole build ~10 min; the tar.gz step alone is ~8 min (7za -mx=9). `~/cheyenne-build/build-linux.sh` on the laptop runs it
+detached (`nohup setsid`, log `build.log`, marker `build.done`). deb/rpm were not built (no `rpmbuild`/`dpkg` there).
+
+### Install (no sudo)
+
+`~/cheyenne-build/install-linux.sh`: tarball → `~/.local/opt/cheyenne/` (binary `com.devlinforsythe.cheyenne`,
+symlink `~/.local/bin/cheyenne`), `~/.local/share/applications/com.devlinforsythe.cheyenne.desktop` + hicolor icon,
+AppImage kept at `~/Applications/Cheyenne.AppImage`. The AppImage needs `libfuse.so.2`, which Omarchy lacks (fuse3 only,
+no sudo to add `fuse2`); it runs with `--appimage-extract-and-run`. The launcher uses the extracted install.
+
+The app downloads nothing: the bundled server lands in `~/.config/com.devlinforsythe.cheyenne/cli/0.0.0-dev-21146-x64/`
+and runs as `opencode-cli serve --service`. Config is the shared `~/.config/opencode/opencode.jsonc` (the box had an
+`opencode.json` with only `autoupdate: false`; it is kept as `opencode.json.pre-cheyenne`). It lists the two plugins
+(`/home/devlin/cheyenne/packages/plugins/{workers,media}`) and a `mini` provider: the Mac mini's MLX server over the
+tailnet (`http://100.113.167.75:8080/v1`, `llm up coder` on the mini brings it up; it is down by default).
+`~/.local/bin/cheyenne-mission` → `packages/plugins/workers/mission.ts` (bun shebang, bun via mise).
+
+### Verified (2026-10-18, laptop screen locked, so proofs were captured over `--remote-debugging-port=9222`)
+
+`docs/linux-proof-chat.jpg`: Cheyenne theme on by default, chat answered ("CHEYENNE LINUX") by the free OpenCode Zen
+model the server offers without a key (Nemotron 3.5 Super VL Free). `docs/linux-proof-command-center.jpg`: the
+Command Center side tab opened from the command palette (`Ctrl+Shift+P`), all tabs present, Missions 0 through
+`cheyenne-mission list --json`. `docs/linux-proof-shopify-tab.jpg`: the Shopify tab loads and reports the Linux-aware
+credential message; ShipStation and Reverb do the same (no store credentials exist on this machine yet).
+Also: `bun test src/command-center/stores.test.ts` 5/5 and `tsgo -b` clean on Linux; the bundled CLI answered
+through the mini provider (`opencode-cli run -m mini/mlx-community/Qwen3-Coder-Next-4bit` → "MINI MLX OK"); the same
+model called `run_worker(claude, …)` and claude 2.1.280 answered in 3 s through `bash -lc`.
+
+### Open for the owner
+
+- **Credentials.** The laptop has none of: `AIRTABLE_TOKEN` (`~/.hermes/.env`), the Shopify / ShipStation / Reverb
+  secrets (`~/.config/wolfe-sync/env` or keyring), an OpenCode Zen / provider key, `FAL_KEY`. They live on the M1 MacBook
+  Pro and its Keychain. Put them in `~/.config/wolfe-sync/env` (600) or `secret-tool store --label NAME service NAME`
+  on the laptop; nothing was copied.
+- **`brain` and `cheyenne-mission` need `~/brain` and `~/bin` on the laptop**; the Command Center's briefing and
+  `run_worker`'s `brain log` say "brain: not found" until the brain CLI is installed there.
+- **Screen capture under hyprlock** is the only reason the proofs came from the debug port; a normal `grim` shot works
+  when the session is unlocked.
+- **Window title** says OpenCode (renderer `document.title`); the Hyprland class is `com.devlinforsythe.cheyenne`, so
+  the launcher matches. Rename belongs with the other "Not branded yet" items.
+- Not merged into `cheyenne`; the branch is `cheyenne-linux` on GitHub.
