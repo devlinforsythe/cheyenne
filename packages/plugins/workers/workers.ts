@@ -25,7 +25,14 @@ const TAIL = 20_000 // characters of output kept for the live view and the resul
 // The desktop server starts without the login shell's PATH (~/bin, ~/.local/bin, ~/.grok/bin),
 // so every command goes through `zsh -lc`. The command and arguments are passed as $0 "$@",
 // never spliced into the script, so the brief cannot inject shell syntax.
-export const run = (argv: readonly string[], cwd: string, signal: AbortSignal | undefined, onData: (text: string) => void) =>
+// `onStderr` splits stderr off (the rooms keep a reader's answer apart from its logs); by default it joins stdout.
+export const run = (
+  argv: readonly string[],
+  cwd: string,
+  signal: AbortSignal | undefined,
+  onData: (text: string) => void,
+  onStderr = onData,
+) =>
   new Promise<number>((resolve, reject) => {
     const child = spawn("/bin/zsh", ["-lc", 'exec "$0" "$@"', ...argv], {
       cwd,
@@ -34,7 +41,7 @@ export const run = (argv: readonly string[], cwd: string, signal: AbortSignal | 
       timeout: MAX_SECONDS * 1000,
     })
     child.stdout.setEncoding("utf8").on("data", onData)
-    child.stderr.setEncoding("utf8").on("data", onData)
+    child.stderr.setEncoding("utf8").on("data", onStderr)
     child.on("error", reject)
     // codex traps the timeout's SIGTERM and exits 0, so a killed child counts as a failure (124, as timeout(1)).
     child.on("close", (code) => resolve(child.killed ? 124 : (code ?? 1)))

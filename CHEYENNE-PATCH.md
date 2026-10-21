@@ -201,7 +201,7 @@ A third store tab, same pattern as 6.0b (`source: "reverb"`, no status/edit/crea
   reverb.com → Settings → API & Integrations with only the `read_orders` scope. One row per order (Reverb orders hold
   one listing), linked to the order's web page.
 
-## 6.1 — Claude as the main model + Claude Code sessions in the sidebar (2026-10-18, branch `cheyenne-claude`, uncommitted)
+## 6.1 — Claude as the main model + Claude Code sessions in the sidebar (2026-10-18, branch `cheyenne-claude`, committed 6b2f0fbb0c, not pushed)
 
 **Provider.** `packages/plugins/claude-code/provider.ts` wraps `ai-sdk-provider-claude-code@3.6.1` (Agent SDK, Claude Code login — no API key; none is set in the service env, `~/.zshrc`, `~/.zprofile` or the config). Wired by config only, in `~/.config/opencode/opencode.jsonc` (backup: `opencode.jsonc.bak-claude`): provider `claude-code` ("Claude (subscription)", npm `file://…/packages/plugins/claude-code/provider.ts`, models `opus` / `sonnet`) and the plugin path in `plugins`. Switch the two models on in Manage models — the toggles are stored per front-end (the Electron app and the web UI each need their own).
 - Runs Claude in the session's folder (the `Working directory:` line of the system prompt), gated like the workers' `claude -p`: `permissionMode: acceptEdits` + `permissionPrompts: none`, so file edits go through and anything that would need a permission prompt (most Bash, web fetches) is refused — no one is there to answer Claude's own prompts. The owner opens the gate with the provider's `options.defaultSettings.permissionMode` in `opencode.jsonc`: `auto` (Claude's classifier decides) or `bypassPermissions` (no gate; only then is `allowDangerouslySkipPermissions` set). Until 2026-10-20 bypass was the default.
@@ -221,7 +221,7 @@ A third store tab, same pattern as 6.0b (`source: "reverb"`, no status/edit/crea
 
 **Next:** Codex / Grok / Cursor session import and launch buttons.
 
-## 6.2 — Codex / Grok / Cursor sessions + agent launch buttons (2026-10-19, branch `cheyenne-claude`, uncommitted)
+## 6.2 — Codex / Grok / Cursor sessions + agent launch buttons (2026-10-19, branch `cheyenne-claude`, committed 6b2f0fbb0c, not pushed)
 
 **Importer.** `packages/plugins/agent-sessions/` (V2 plugin `cheyenne.agent-sessions`, path added to `plugins` in `~/.config/opencode/opencode.jsonc`, backup `opencode.jsonc.bak-agents`). Same shape as claude-code's importer: converts transcripts (read-only) with `opencode session import`, last 7 days, 4 s after start then every 5 min (one timer per server process, see 6.1). Records: `~/.cheyenne/<codex|grok|cursor>-imports.json`. By hand: `bun packages/plugins/agent-sessions/common.ts [codex|grok|cursor] [days] [--headless]`.
 - Ids `ses_<codex|grok|cursor>_<uuid without dashes>`, folder = the transcript's cwd, `metadata.<agent>.{sessionId, source}`.
@@ -238,3 +238,73 @@ A third store tab, same pattern as 6.0b (`source: "reverb"`, no status/edit/crea
 - Known: opening the dock when it has no tabs also creates a plain "Terminal 1" beside the agent tab.
 
 **Verified** through a throwaway server run from source (`packages/cli`, `OPENCODE_DISABLE_CHANNEL_DB=1`, port 5299) because the service's embedded web UI is built from a stale `packages/app/dist` (rebuilt now with `bun run build` in packages/app; the service CLI embeds it on its next build): group by Agent shows Claude Code + Codex groups (`docs/agents-group-by-agent.jpg`); a Codex transcript renders with the header buttons (`docs/agents-codex-transcript.jpg`); **+ Claude** opened Claude Code in ~/My Businesses in a terminal tab (`docs/agents-launch-buttons.jpg`). The continue flags were checked against each CLI's `--help`; Continue was not clicked (it would fork a real thread). `bun run check` passes; app rebuilt (previous build: `~/cheyenne-backups/Cheyenne-pre-agents.app`). **Not verified:** the Electron app itself (relaunch it — the running copy is the old build).
+
+## 6.3 — Rooms: Agent Kanban, Loop, Pipeline, Mastermind (2026-10-21, branch `cheyenne-claude`, committed locally, not pushed)
+
+The four Agent OS rooms the owner picked (2026-10-20), written as our own code. Agent OS (`~/agent-os`, no licence) was read for behaviour only: no file, component or prompt was copied.
+
+**CLI.** `packages/plugins/workers/rooms.ts`, linked as `~/bin/cheyenne-rooms`. Every command prints JSON. Long jobs run in a detached runner (`cheyenne-rooms <room> run <id>`), so they outlive the app. State lives in `~/.cheyenne/rooms/{loop,pipeline,chat}/`. `cheyenne-rooms state [chat id]` returns every room at once; the tab polls it every 3 s.
+- **Agent Kanban** shows the missions (mission.ts) as a board with Planner / Builder / Reviewer / Done columns, placed by the stage in hand:
+  - `plan` → Planner;
+  - `verify`, `review`, `judge`, `test` or `qa` → Reviewer;
+  - any other stage → Builder;
+  - no stage left → Done.
+
+  A new card opens a mission on the default stages, each waiting for the owner's Approve (`cheyenne-mission approve`, as in the Command Center).
+- **Loop** pairs a written definition of done with a builder and a judge.
+  - The builder is a worker. It works in the mission's worktree and commits to its branch; it never merges, pushes or installs.
+  - The judge must be a different model. It reads the same worktree read-only.
+  - The verdict is the judge's first PASS/FAIL line. FAIL feedback goes into the next round.
+  - The loop stops on PASS, at the round limit (1–8, default 4), when the builder or judge breaks, or on Stop (which kills the runner's process group).
+  - It refuses to start while a mission stage runs, or while another loop runs on the mission. It ends with `brain log`.
+- **Pipeline** lists the ideas in `~/My Businesses/ideas/inbox.jsonl` (inbox and parked, plus the approved ones).
+  - "Classify and plan" asks a read-only agent for a route (project / action / reference / drop) and 1–6 stages.
+  - The owner reviews the plan, then approves once with **Approve & build**: `idea doing <id>`, a mission whose stages run without pausing, and `brain log`.
+  - Reject writes pipeline state only; the inbox is untouched.
+- **Mastermind** holds group chats (`chat/<id>.jsonl`, append-only).
+  - The owner's message goes to everyone in the chat. With @-tags it goes only to the tagged agents, and tagging an agent adds it to the chat.
+  - claude, codex, grok and hermes reply one at a time, read-only, from `~/My Businesses`, and each sees the chat so far.
+  - One runner per chat (a lock file).
+- The readers (judge, planner, Mastermind) run read-only:
+  - `claude -p --permission-mode plan`;
+  - `codex exec --sandbox read-only`;
+  - `grok --permission-mode plan -p`;
+  - `hermes -t web -z`. `-z` auto-approves hermes's tools, so `-t web` limits it to the web toolset; its MCP servers may still load.
+
+  Answers pass through agent-sessions' `redact()`. Builders keep the workers' gated flags: no yolo, bypass or full-auto.
+- Edits to shared files:
+  - `workers.ts`: `run()` takes an optional `onStderr`, which keeps a reader's answer apart from its logs.
+  - `mission.ts`: honours `CHEYENNE_MISSIONS`.
+- Env overrides, for tests and screenshots:
+  - `CHEYENNE_ROOMS`;
+  - `CHEYENNE_IDEA_HOME`: the home whose `My Businesses/ideas/inbox.jsonl` the Pipeline reads. `idea doing` runs with `HOME` set to it.
+  - `CHEYENNE_MISSIONS`.
+
+  The Electron main process passes its env on to the CLI.
+
+**Tab.** `packages/gui-extensions/src/rooms/` (contract.ts, main.ts, renderer.tsx, panel.tsx, i18n/en.ts), registered in `src/main.ts`, `src/renderer.ts` and the README builtins. It is a side panel called "Rooms": open it from the session panel's add-tab menu, or with "Open Rooms" in the palette. Every button is one CLI call through main.
+- Gotcha: the IPC method is `read`, not `state`. An Ipc client keeps `state()` and `on()` for itself, and the types merge without an error. In the first build, the tab rendered nothing because of this.
+
+**Known.**
+- A loop and a mission stage share the worktree. Loop Start refuses while a stage runs, but approving a stage during a loop is not blocked.
+- Mastermind: if two runners take over a stale lock at the same moment, both may reply (duplicate replies at worst).
+- hermes answers with HTTP 402 today: its OpenRouter credits are exhausted (owner-side). The error shows in the chat.
+- The env overrides move state only. The agents and `brain` stay real, so an Approve in a test instance runs real workers and writes real brain entries. On 2026-10-21 a test card's plan stage was approved in the screenshot instance, by a click that was not the session's; it ran one claude worker in the scratchpad worktree, and the `mission-card-test` workstream was closed as not real work.
+
+**Check.**
+- `bun test rooms.test.ts` in packages/plugins/workers runs 6 tests: columns, verdicts, who replies, owed replies, plan parsing, and a Pipeline promote against a temp inbox (the real inbox is untouched).
+- An end-to-end run used stub agents with a temp rooms dir, inbox and missions dir. It covered:
+  - Pipeline: shape → review → reject or approve → mission done → idea marked doing;
+  - Kanban: a card;
+  - Loop: FAIL → PASS in 2 rounds, and Stop (the process group gone);
+  - Mastermind: a chat with an @-tag;
+  - the brain calls, logged.
+
+**Verified** in the rebuilt Electron app, launched on debug port 9333 with test state (the three env overrides). Screenshots were taken over CDP and clipped to the Rooms panel, because the repo is public.
+- Agent Kanban: a test card waiting on its stage's Approve (`docs/rooms-kanban.jpg`).
+- Loop: the e2e's stub-agent loop, FAIL → PASS (`docs/rooms-loop.jpg`).
+- Pipeline: a real claude plan of a test idea, made with the tab's "Classify and plan", then rejected from the tab (`docs/rooms-pipeline.jpg`).
+- Mastermind: one message sent from the tab, @-tagging claude, codex and grok; all three replied in turn within a minute (`docs/rooms-mastermind.jpg`).
+- Not clicked: Add card, Start loop, Approve, Approve & build. They start real work; their CLI paths ran in the stub e2e.
+- Fixed after the first shot: the selected tab used an undefined colour token (now `bg-v2-background-bg-layer-02`), and the card's "Approve {{stage}}" overflowed the small button (now "Approve" / "Retry"; the card already shows its stage). The Command Center tab had the same undefined token on its selected tab and pending badge (`command-center/panel.tsx`); it is fixed in source and ships with the next app build.
+- `bun run check` passes; previous build: `~/cheyenne-backups/Cheyenne-pre-rooms.app`.

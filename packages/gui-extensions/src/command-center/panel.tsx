@@ -122,7 +122,7 @@ export default function CommandCenterPanel(props: { center: Accessor<Live<Client
               role="tab"
               aria-selected={view() === id}
               class="rounded px-2 py-0.5 text-12-medium"
-              classList={{ "text-text-weak": view() !== id, "bg-v2-background-bg-strong text-text-base": view() === id }}
+              classList={{ "text-text-weak": view() !== id, "bg-v2-background-bg-layer-02 text-text-base": view() === id }}
               onClick={() => setView(id)}
             >
               {ctx.t(`tab.${id}`)}
@@ -170,7 +170,7 @@ export default function CommandCenterPanel(props: { center: Accessor<Live<Client
                           <span
                             class="rounded px-1.5 py-0.5 text-11-medium"
                             classList={{
-                              "bg-v2-background-bg-strong text-text-weak": item.status === "pending",
+                              "bg-v2-background-bg-layer-02 text-text-weak": item.status === "pending",
                               "text-text-base": item.status !== "pending",
                             }}
                             style={

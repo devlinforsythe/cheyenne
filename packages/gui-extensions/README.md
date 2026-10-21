@@ -675,6 +675,7 @@ export const builtins = Extension.compose(
   { ...wsl, main: () => import("./wsl/main") },
   microsoftOffice,
   { ...commandCenter, main: () => import("./command-center/main") }, // cheyenne
+  { ...rooms, main: () => import("./rooms/main") }, // cheyenne
 )
 ```
 
@@ -702,6 +703,7 @@ export const builtins = Extension.compose(
   { ...wsl, renderer: eager(wslRenderer) },
   { ...microsoftOffice, renderer: eager(microsoftOfficeRenderer) },
   { ...commandCenter, renderer: eager(commandCenterRenderer) }, // cheyenne
+  { ...rooms, renderer: eager(roomsRenderer) }, // cheyenne
 )
 ```
 

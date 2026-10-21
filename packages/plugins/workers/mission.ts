@@ -43,7 +43,8 @@ export type Mission = {
   stages: Stage[]
 }
 
-export const HOME = join(homedir(), ".cheyenne", "missions")
+// CHEYENNE_MISSIONS points the board at test missions (the Rooms screenshots: the cheyenne repo is public).
+export const HOME = process.env.CHEYENNE_MISSIONS ?? join(homedir(), ".cheyenne", "missions")
 
 const DESIGN = join(homedir(), "My Businesses", "Recode Design", "DESIGN-SYSTEM.md")
 
