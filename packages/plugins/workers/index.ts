@@ -11,10 +11,10 @@ export default Plugin.define({
         name: "run_worker",
         options: { codemode: false },
         description: [
-          "Run one stage brief through an external worker CLI, logged in with the owner's own subscription.",
+          "Run one stage brief through an external worker (over ACP, else its CLI), logged in with the owner's own subscription.",
           "claude = Claude Code (plans, multi-file code, verification); codex = Codex (visuals / UI);",
           "cursor = Cursor agent (code review, parallel builds); grok = Grok Build (research, builds).",
-          "The worker runs in mission_dir with write access there, its output streams into this call,",
+          "The worker runs in mission_dir with write access there (edits outside it are denied), its messages and tool calls stream into this call,",
           "and a `brain log -a <worker>` entry records the run when it ends. Runs are capped at 30 minutes.",
         ].join(" "),
         input: Schema.Struct({
