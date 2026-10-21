@@ -1,0 +1,18 @@
+{
+  "name": "@cheyenne/plugin-agent-sessions",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Cheyenne: Codex, Grok CLI and Cursor agent sessions in the sidebar",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    "./server": "./index.ts",
+    ".": "./index.ts"
+  },
+  "dependencies": {
+    "@opencode/schema": "workspace:*"
+  },
+  "peerDependencies": {
+    "@opencode/plugin": "^2.0.27 || ^0.0.0-dev"
+  }
+}

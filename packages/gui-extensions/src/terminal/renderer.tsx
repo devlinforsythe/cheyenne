@@ -2,6 +2,7 @@ import { createMemo, lazy, on, onCleanup, Suspense } from "solid-js"
 import { Command, createKeyed, onIdle, Panel, type Setup } from "../sdk"
 import type Terminal from "./index"
 import { createTerminalModel, type TerminalWorkspace } from "./model"
+import { addAgents } from "./agents" // cheyenne
 
 const DOCK = "terminal:main"
 
@@ -122,6 +123,8 @@ const setup: Setup<typeof Terminal> = (ctx) => {
       },
     }),
   )
+
+  addAgents(ctx, model) // cheyenne
 
   const TerminalPanel = lazy(() => import("./panel"))
 

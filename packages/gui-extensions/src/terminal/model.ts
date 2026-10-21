@@ -309,13 +309,14 @@ function createWorkspace(input: { storage: Storage; server: ServerRef; directory
     clear() {
       stored.set({ active: undefined, all: [] })
     },
-    new() {
+    // cheyenne: `run` starts a program in the tab instead of the shell (agents.ts: launch / continue another agent)
+    new(run?: { title: string; command: string; args: string[] }) {
       const nextNumber = pickNextTerminalNumber()
       const focusRequest = requestFocus(undefined, true)
 
       const doCreate = async () => {
         return input.server.client.pty
-          .create({ location, title: defaultTitle(nextNumber) })
+          .create({ location, title: run?.title ?? defaultTitle(nextNumber), command: run?.command, args: run?.args }) // cheyenne
           .then((result) => result.data)
       }
 
@@ -331,7 +332,7 @@ function createWorkspace(input: { storage: Storage; server: ServerRef; directory
 
           const newTerminal = {
             id,
-            title: data?.title ?? defaultTitle(nextNumber),
+            title: data?.title ?? run?.title ?? defaultTitle(nextNumber), // cheyenne
             titleNumber: nextNumber,
           }
 

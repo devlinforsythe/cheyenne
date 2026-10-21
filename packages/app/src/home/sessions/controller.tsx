@@ -425,7 +425,16 @@ function groupSessions(
   const none = language.t("home.sessions.group.none")
   if (by === "project") return groupByKey(records, (record) => record.projectName)
   if (by === "model") return groupByKey(records, (record) => record.session.model?.id ?? none)
-  if (by === "agent") return groupByKey(records, (record) => record.session.agent ?? none)
+  if (by === "agent")
+    // cheyenne: sessions imported from other agents (packages/plugins/claude-code, agent-sessions) group under their own agent
+    return groupByKey(records, (record) => {
+      const metadata = record.session.metadata
+      if (metadata?.claudeCode) return "Claude Code"
+      if (metadata?.codex) return "Codex"
+      if (metadata?.grok) return "Grok"
+      if (metadata?.cursor) return "Cursor"
+      return record.session.agent ?? none
+    })
   const now = new Date()
   const today = localDay(now)
   const yesterday = localDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1))
