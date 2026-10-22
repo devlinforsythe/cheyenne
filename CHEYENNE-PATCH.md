@@ -319,7 +319,7 @@ The four Agent OS rooms the owner picked (2026-10-20), written as our own code. 
   - `session/set_mode` (codex: `workspace-write`);
   - `session/prompt` with the brief.
 - The `session/update` stream (messages, tool calls with diffs, tool results, plans) is the live view, through the same `onData` → `context.progress` path as before.
-- **Permission policy** (`decide`): edits, deletes and moves are allowed only when every path is inside the mission folder (real paths, so /var ↔ /private/var). Reads are allowed anywhere, because briefs point at files like DESIGN-SYSTEM.md. Execute, fetch and anything unknown are denied.
+- **Permission policy** (`decide`): edits, deletes and moves are allowed only when every path is inside the mission folder (real paths, so /var ↔ /private/var). Reads are allowed anywhere, because briefs point at files like DESIGN-SYSTEM.md. Shell commands are allowed when they run in the mission folder (owner 2026-10-22): claude, cursor and grok send no cwd, so they run in the session folder; a command that names a cwd outside is denied. This is not containment (a command can still `cd ..`), only what the CLI fallback already allowed. Fetch and anything unknown are denied.
   - This replaces the gated flags, but only on the ACP path. The shell rows keep their flags.
   - Codex and grok end the turn on a rejection. The runner then tells them what was denied and lets them carry on, at most 3 times.
 - **Fallback**: if the agent can't start or open a session (missing binary, no handshake in 2 minutes), `run_worker` runs the old CLI row instead and says so in the output. Kept as before: `brain log -a <worker>`, which now says `over acp` or `over cli`; the 30-minute limit (exit 124); and abort.
@@ -346,5 +346,5 @@ The four Agent OS rooms the owner picked (2026-10-20), written as our own code. 
   - cursor asks for them, and the policy denies them.
 
 **Known.**
-- Builders on cursor (and grok, outside its safe list) can't run tests or `git commit` over ACP, because execute is denied. Allowing commands inside the mission folder is the owner's call.
+- Commands in the mission folder are allowed since 2026-10-22: cursor and grok each ran `git init` + `git commit` over ACP in a temp folder (both `end_turn`, a commit made).
 - The server's default model, OpenCode Zen, fails with "This API key has expired" (owner-side). Use `-m openai/...` or renew the key.

@@ -53,11 +53,14 @@ const inside = (path: string, dir: string) => {
 
 const EDITS = ["edit", "delete", "move"]
 // ponytail: reads are allowed anywhere (briefs point at files outside the folder, e.g. DESIGN-SYSTEM.md);
-// shell commands, fetches and anything unknown are denied. Agents that sandbox their own commands (codex's
-// workspace-write) never ask for those, so they still run.
+// fetches and anything unknown are denied.
 const READS = ["read", "search", "think"]
+// Shell commands run in the session folder (the mission folder): claude, cursor and grok send no cwd, so a command
+// is allowed unless it names a working folder outside. ponytail: not containment (a command can still `cd ..`),
+// only what the CLI fallback already allows; sandbox-exec the agents if that ever matters. codex sandboxes its own.
+const CWDS = ["cwd", "workdir", "working_directory"]
 
-/** The permission policy: edits inside the mission folder and reads are allowed; everything else is denied. */
+/** The permission policy: reads, edits inside the mission folder and commands run there are allowed; the rest is denied. */
 export function decide(call: ToolCall, options: Option[], dir: string) {
   const raw = call.rawInput ?? {}
   const paths = [
@@ -66,7 +69,8 @@ export function decide(call: ToolCall, options: Option[], dir: string) {
   ]
   const allow =
     READS.includes(call.kind ?? "") ||
-    (EDITS.includes(call.kind ?? "") && paths.length > 0 && paths.every((path) => inside(path, dir)))
+    (EDITS.includes(call.kind ?? "") && paths.length > 0 && paths.every((path) => inside(path, dir))) ||
+    (call.kind === "execute" && CWDS.every((key) => typeof raw[key] !== "string" || inside(raw[key] as string, dir)))
   const pick = (kinds: string[]) => kinds.map((kind) => options.find((o) => o.kind === kind)).find(Boolean)
   const option = allow ? pick(["allow_once", "allow_always"]) : pick(["reject_once", "reject_always"])
   return { allow, outcome: option ? { outcome: "selected", optionId: option.optionId } : { outcome: "cancelled" } }
@@ -203,7 +207,7 @@ export function runAcp(input: {
       for (let retry = 0; result?.stopReason === "cancelled" && denied.length && retry < 3; retry++) {
         const text =
           `Cheyenne's permission policy denied: ${denied.splice(0).join("; ")}. Only edits inside ${input.dir} are ` +
-          "allowed, and shell commands outside your own sandbox are not. Carry on with the brief without them, and " +
+          "allowed, and shell commands only run there. Carry on with the brief without them, and " +
           "say in your summary what you could not do."
         input.onData(`\n[acp] ${text}\n`)
         result = await prompt(text)
