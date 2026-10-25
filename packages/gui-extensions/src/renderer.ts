@@ -29,6 +29,8 @@ import commandCenter from "./command-center" // cheyenne
 import commandCenterRenderer from "./command-center/renderer" // cheyenne
 import rooms from "./rooms" // cheyenne
 import roomsRenderer from "./rooms/renderer" // cheyenne
+import sessionExtras from "./session-extras" // cheyenne
+import sessionExtrasRenderer from "./session-extras/renderer" // cheyenne
 
 // The window renders once every built-in is active, so the small renderer entries load with the app, like the
 // features they replaced. Heavy UI stays behind `lazy()` inside them.
@@ -55,4 +57,5 @@ export const builtins = Extension.compose(
   { ...microsoftOffice, renderer: eager(microsoftOfficeRenderer) },
   { ...commandCenter, renderer: eager(commandCenterRenderer) }, // cheyenne
   { ...rooms, renderer: eager(roomsRenderer) }, // cheyenne
+  { ...sessionExtras, renderer: eager(sessionExtrasRenderer) }, // cheyenne
 )

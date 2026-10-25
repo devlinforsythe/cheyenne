@@ -19,6 +19,7 @@ import { base64Encode } from "@opencode/util/encode"
 import { showToast } from "@/shell/notifications/toast"
 import { adjacentTabKey, mergeVisibleTabOrder } from "./tab-order"
 import type { SessionInfo } from "@opencode/client/promise"
+import { FolderHeader, SessionChildren, SidebarAdd, TabMenuItems, useSidebar } from "@/cheyenne/sidebar" // cheyenne
 
 function SessionTabSlot(props: {
   tab: SessionTab
@@ -26,6 +27,7 @@ function SessionTabSlot(props: {
   index: number
   active: boolean
   orientation: "horizontal" | "vertical"
+  indent?: number // cheyenne
   session: SessionInfo | undefined
   preparing: boolean
   unread: boolean
@@ -58,6 +60,7 @@ function SessionTabSlot(props: {
         "w-56 min-w-7 max-w-56 flex-shrink": props.orientation === "horizontal",
         "w-full shrink-0": props.orientation === "vertical",
       }}
+      style={props.indent ? { "padding-left": `${props.indent * 12}px` } : undefined} // cheyenne
     >
       <TabNavItem
         ref={(el) => {
@@ -76,6 +79,7 @@ function SessionTabSlot(props: {
         active={props.active}
         dragging={sortable.isDragSource()}
         orientation={props.orientation}
+        menu={<TabMenuItems tab={props.tab} />} // cheyenne
       />
     </div>
   )
@@ -87,6 +91,7 @@ function SessionTabEntry(props: {
   index: number
   active: boolean
   orientation: "horizontal" | "vertical"
+  indent?: number // cheyenne
   serverCtx: ServerCtx | undefined
   onVisibleChange: (visible: boolean) => void
   onUnreadChange: (unread: boolean) => void
@@ -200,6 +205,7 @@ function SessionTabEntry(props: {
         index={props.index}
         active={props.active}
         orientation={props.orientation}
+        indent={props.indent} // cheyenne
         session={session()}
         preparing={!!pending()}
         unread={unread()}
@@ -223,6 +229,7 @@ function DraftTabSlot(props: {
   index: number
   active: boolean
   orientation: "horizontal" | "vertical"
+  indent?: number // cheyenne
   title: string
   onNavigate: (element: HTMLDivElement) => void
   onClose: () => void
@@ -250,6 +257,7 @@ function DraftTabSlot(props: {
         "w-56 min-w-7 max-w-56 flex-shrink": props.orientation === "horizontal",
         "w-full shrink-0": props.orientation === "vertical",
       }}
+      style={props.indent ? { "padding-left": `${props.indent * 12}px` } : undefined} // cheyenne
     >
       <DraftTabItem
         ref={(el) => {
@@ -279,10 +287,16 @@ export function TitlebarTabStrip(props: {
   const language = useLanguage()
   const command = useCommand()
   const vertical = () => props.orientation === "vertical"
+  const sidebar = useSidebar(() => props.tabs) // cheyenne
   let listRef!: HTMLDivElement
   const [visibility, setVisibility] = createStore<Record<string, boolean>>({})
   const [unread, setUnread] = createStore<Record<string, boolean>>({})
-  const visibleTabs = createMemo(() => props.tabs.filter((tab) => tab.type === "draft" || visibility[tabKey(tab)]))
+  const visibleTabs = createMemo(() =>
+    (vertical() ? sidebar.tabs() : props.tabs).filter(
+      // cheyenne
+      (tab) => tab.type === "draft" || visibility[tabKey(tab)],
+    ),
+  )
   const visibleTabIds = () => visibleTabs().map(tabKey)
 
   command.register("titlebar-tab-cycle", () => [
@@ -355,6 +369,9 @@ export function TitlebarTabStrip(props: {
           "max-h-full flex-col overflow-y-auto overflow-x-hidden": vertical(),
         }}
       >
+        <Show when={vertical()}>
+          <SidebarAdd /> {/* cheyenne */}
+        </Show>
         <DragDropProvider
           sensors={[
             PointerSensor.configure({
@@ -388,9 +405,11 @@ export function TitlebarTabStrip(props: {
             const tabEl = source.element?.querySelector<HTMLDivElement>("[data-titlebar-tab]")
             props.onNavigate(tab, tabEl ?? undefined)
           }}
+          onDragMove={(event) => vertical() && sidebar.move(event)} // cheyenne
           onDragEnd={(event) => {
             const current = visibleTabIds()
             const source = event.operation.source
+            if (vertical()) sidebar.settle(event, current) // cheyenne
 
             if (event.canceled || !isSortable(source)) return
 
@@ -414,8 +433,10 @@ export function TitlebarTabStrip(props: {
             classList={{ "flex-row items-center": !vertical(), "flex-col items-stretch": vertical() }}
             ref={listRef}
           >
-            <For each={props.tabs}>
-              {(tab) => {
+            <For each={vertical() ? sidebar.items() : props.tabs}>
+              {(item) => {
+                if (!("type" in item)) return <FolderHeader folder={item} depth={sidebar.depth(item.id)} /> // cheyenne
+                const tab = item // cheyenne
                 const id = tabKey(tab)
                 let ref!: HTMLDivElement
                 const visibleIndex = () => visibleTabs().findIndex((item) => tabKey(item) === id)
@@ -429,21 +450,27 @@ export function TitlebarTabStrip(props: {
 
                 if (tab.type === "session") {
                   return (
-                    <SessionTabEntry
-                      tab={tab}
-                      id={id}
-                      index={visibleIndex()}
-                      active={props.currentTab === tab}
-                      orientation={vertical() ? "vertical" : "horizontal"}
-                      serverCtx={serverCtx()}
-                      onVisibleChange={(visible) => setVisibility(id, visible)}
-                      onUnreadChange={(value) => setUnread(id, value)}
-                      onNavigate={(element) => {
-                        ref = element
-                        props.onNavigate(tab, element)
-                      }}
-                      onClose={() => props.onClose(tab)}
-                    />
+                    <>
+                      <SessionTabEntry
+                        tab={tab}
+                        id={id}
+                        index={visibleIndex()}
+                        active={props.currentTab === tab}
+                        orientation={vertical() ? "vertical" : "horizontal"}
+                        indent={sidebar.depth(id)} // cheyenne
+                        serverCtx={serverCtx()}
+                        onVisibleChange={(visible) => setVisibility(id, visible)}
+                        onUnreadChange={(value) => setUnread(id, value)}
+                        onNavigate={(element) => {
+                          ref = element
+                          props.onNavigate(tab, element)
+                        }}
+                        onClose={() => props.onClose(tab)}
+                      />
+                      <Show when={vertical()}>
+                        <SessionChildren tab={tab} serverCtx={serverCtx()} depth={sidebar.depth(id)} /> {/* cheyenne */}
+                      </Show>
+                    </>
                   )
                 }
 
@@ -454,6 +481,7 @@ export function TitlebarTabStrip(props: {
                     index={visibleIndex()}
                     active={props.currentTab === tab}
                     orientation={vertical() ? "vertical" : "horizontal"}
+                    indent={sidebar.depth(id)} // cheyenne
                     title={language.t("session.tab.session")}
                     onNavigate={(element) => {
                       ref = element

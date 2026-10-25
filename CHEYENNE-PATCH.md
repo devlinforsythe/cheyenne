@@ -348,3 +348,48 @@ The four Agent OS rooms the owner picked (2026-10-20), written as our own code. 
 **Known.**
 - Commands in the mission folder are allowed since 2026-10-22: cursor and grok each ran `git init` + `git commit` over ACP in a temp folder (both `end_turn`, a commit made).
 - The server's default model, OpenCode Zen, fails with "This API key has expired" (owner-side). Use `-m openai/...` or renew the key.
+
+## Panes — side screen, sidebar groups, split view (2026-10-25, branch `claude/cheyenne-panes-b3086c`)
+
+These match three features of the Claude Desktop Code tab. Most of the code is new files. The upstream edits are small and marked `// cheyenne`.
+
+**Side screen.** The right-hand panel is OpenCode's own. It already has Files Changed (diff), File, Terminal, close and reopen per tab, collapse, and width and open tabs kept for each session. The new piece is the `session-extras` gui-extension (`packages/gui-extensions/src/session-extras/`), which adds two side tabs through the panel's "+" menu:
+- **Tasks**: the session's todo list.
+- **Artifacts**: files the agent wrote.
+
+**Sidebar sections and groups** apply to vertical tabs only (`packages/app/src/cheyenne/sidebar.tsx`, `layout.ts`, `store.ts`; the store key is `cheyenne.sidebar`).
+- To add one, use the "+" beside Sessions, which gives New section or New group.
+- Right-click a header to rename it, add a group inside it, or delete it. Deleting keeps its sessions: they move up a level.
+- A group nests one level inside a section, and never inside another group.
+- Click a header to collapse or expand it.
+- To file a session, drag its tab onto a header, or right-click it → Move to. A plain reorder files the tab with the neighbour it lands next to.
+- Child (subagent) sessions show under their parent with ↳.
+
+**Split view** (`packages/app/src/cheyenne/split.tsx`; the store key is `cheyenne.split`).
+- To open a split, right-click a session tab → Open in split view, or drag a tab to the window's right edge (the last 160px), where a drop target shows.
+- Each pane has a resize handle (320–1400px) and its own close bar. Panes are kept across reloads.
+
+**Upstream edits** (all marked `// cheyenne`):
+- `packages/app/src/shell/routes/routes.tsx`: exports `TargetSessionRouteContent` and `TargetServerRoute` for the split panes.
+- `packages/app/src/shell/shell.tsx`: wraps the routed page in `SplitView`.
+- `packages/app/src/shell/titlebar/tab-nav.tsx`: a `menu` slot on `TabNavItem`'s right-click menu.
+- `packages/app/src/shell/titlebar/tab-strip.tsx`:
+  - in vertical mode it renders the sidebar rows (folders, indented tabs, children);
+  - it adds the "+" menu and the tab menu items;
+  - the drag handlers (`sidebar.move` and `sidebar.settle`) file tabs and open splits.
+- `packages/gui-extensions/src/main.ts`, `renderer.ts`, `README.md`: register `session-extras`.
+
+**Check.** `bun test src/cheyenne` in packages/app runs `layout.test.ts`. It covers saving and restoring the group and split state, deleting a group without losing its sessions, the one-level nesting rule, and deduping and closing split panes. `bun run check` passes.
+
+**Verified** 2026-10-25 in an isolated dev build (`OPENCODE_DESKTOP_TEST_ROOT`, its own test server). Screenshots: `docs/panes-side.jpg`, `docs/panes-groups.jpg`, `docs/panes-split.jpg`. Everything listed above was tried by hand:
+- side panel: open, add Tasks and Artifacts, close Tasks and reopen it, tabs kept across a reload;
+- sidebar: create and rename sections and groups, drag onto headers, Move to, collapse, delete a group, the layout kept across a reload, the child nested;
+- split: open from the menu and by dragging to the right edge, resize, close.
+
+**Known limits.**
+- Split panes share the main pane's navigation, URL hash and keybindings. Only the session shown differs.
+- In narrow panes the session header's buttons (+Claude, +Codex…) squeeze the title.
+- Child sessions load only for inactive tabs (upstream's sync), and they sit outside the drag sortables.
+- A tab inside a collapsed folder is hidden, including the active one.
+- Draft tabs get no Move to item.
+- Browser/preview is not a side tab. OpenCode has none, and it was left out.

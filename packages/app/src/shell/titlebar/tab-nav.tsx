@@ -1,4 +1,4 @@
-import { createEffect, createMemo, createSignal, onCleanup, Show, type Ref } from "solid-js"
+import { createEffect, createMemo, createSignal, onCleanup, Show, type JSX, type Ref } from "solid-js" // cheyenne
 import { createStore } from "solid-js/store"
 import { Predicate } from "effect"
 import { makeEventListener } from "@solid-primitives/event-listener"
@@ -39,6 +39,7 @@ export function TabNavItem(props: {
   pressed?: boolean
   hidden?: boolean
   orientation?: "horizontal" | "vertical"
+  menu?: JSX.Element // cheyenne
 }) {
   const language = useLanguage()
   const [menu, setMenu] = createStore({ open: false, rename: false })
@@ -416,6 +417,7 @@ export function TabNavItem(props: {
             {language.t("common.rename")}
           </Menu.Item>
           <Menu.Item onSelect={props.onClose}>{language.t("common.closeTab")}</Menu.Item>
+          {props.menu /* cheyenne */}
         </Menu.Context.Content>
       </Menu.Context.Portal>
     </Menu.Context>
