@@ -86,7 +86,7 @@ function modelLabel(
 
 function MessageActionButton(
   props: Pick<ComponentProps<"button">, "disabled" | "onMouseDown" | "onClick" | "aria-label"> & {
-    icon: "check" | "copy" | "reset" | "arrow-down-to-line" | "outline-trash"
+    icon: "check" | "copy" | "reset" | "arrow-down-to-line" | "outline-trash" | "outline-undo" // cheyenne: outline-undo (rewind)
     label: JSX.Element
   },
 ) {
@@ -464,6 +464,18 @@ export function CurrentUserMessageDisplay(props: {
               aria-label={i18n.t("ui.message.revertMessage")}
             />
           </Show>
+          <Show when={props.actions?.rewind && !pending()}>{/* cheyenne */}
+            <MessageActionButton
+              icon="outline-undo"
+              label={i18n.t("ui.message.rewind")}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={(event) => {
+                event.stopPropagation()
+                props.actions?.rewind?.({ sessionID: props.sessionID, messageID: props.message.id })
+              }}
+              aria-label={i18n.t("ui.message.rewind")}
+            />
+          </Show>{/* cheyenne */}
           {/* Like the iOS app, a Voice message's copy also offers the full prompt the session received, on right click. */}
           <Show
             when={props.voice}
