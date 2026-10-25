@@ -88,20 +88,20 @@ function attribute(codes: number[]): Style {
 
   if (code >= 100 && code <= 107) return { background: BASIC[code - 92] }
 
-  return FLAGS.get(code) ?? {}
+  return FLAGS[code] ?? {}
 }
 
-const FLAGS = new Map<number, Style>([
-  [1, { bold: true }],
-  [2, { dim: true }],
-  [3, { italic: true }],
-  [4, { underline: true }],
-  [22, { bold: undefined, dim: undefined }],
-  [23, { italic: undefined }],
-  [24, { underline: undefined }],
-  [39, { color: undefined }],
-  [49, { background: undefined }],
-])
+const FLAGS: Record<number, Style> = {
+  1: { bold: true },
+  2: { dim: true },
+  3: { italic: true },
+  4: { underline: true },
+  22: { bold: undefined, dim: undefined },
+  23: { italic: undefined },
+  24: { underline: undefined },
+  39: { color: undefined },
+  49: { background: undefined },
+}
 
 // The xterm palette.
 const BASIC = [
