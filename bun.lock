@@ -582,6 +582,13 @@
         "@opencode/plugin": "^2.0.27 || ^0.0.0-dev",
       },
     },
+    "packages/plugins/claude-hooks": {
+      "name": "@cheyenne/plugin-claude-hooks",
+      "version": "0.0.1",
+      "peerDependencies": {
+        "@opencode/plugin": "^2.0.27 || ^0.0.0-dev",
+      },
+    },
     "packages/plugins/figma": {
       "name": "@opencode/plugin-figma",
       "version": "2.0.29",
@@ -1638,6 +1645,8 @@
     "@cheyenne/plugin-agent-sessions": ["@cheyenne/plugin-agent-sessions@workspace:packages/plugins/agent-sessions"],
 
     "@cheyenne/plugin-claude-code": ["@cheyenne/plugin-claude-code@workspace:packages/plugins/claude-code"],
+
+    "@cheyenne/plugin-claude-hooks": ["@cheyenne/plugin-claude-hooks@workspace:packages/plugins/claude-hooks"],
 
     "@cheyenne/plugin-media": ["@cheyenne/plugin-media@workspace:packages/plugins/media"],
 
