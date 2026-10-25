@@ -555,6 +555,14 @@ export interface SlotMap {
     /** The timeline is the one on screen. */
     readonly active: boolean
   }
+  // cheyenne: a strip under the composer, for the status line.
+  /** A thin strip under the composer, shown while the composer is. */
+  readonly "session.composer": {
+    /** The owning session screen; always present. */
+    readonly screen: SessionScreen
+    /** The routed session; a new object when another session is routed. */
+    readonly session: MountedSession
+  }
   /** The actions at the end of the side region's tab strip. */
   readonly "session.panel.end": {
     /** The owning session screen; always present. */

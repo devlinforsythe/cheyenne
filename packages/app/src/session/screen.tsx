@@ -20,7 +20,7 @@ import type { SessionModel } from "@/session/model"
 import { SESSION_PANEL_WIDTH_MIN } from "@/session/session-panel-width"
 import { SessionPanelFrame } from "@/session/session-frame"
 import { useExtensionHost } from "@/runtime/extension/host"
-import { ExtensionLinks } from "@/runtime/extension/render"
+import { ExtensionLinks, ExtensionSlot } from "@/runtime/extension/render" // cheyenne: ExtensionSlot
 import { createPanelSidebar, createRegion, DockRegion, MobilePanel } from "@/runtime/extension/panels"
 import { createMobileViews, MobileViewTabs } from "@/runtime/extension/mobile"
 import { useExtensionAttachment } from "@/runtime/extension/host-apis"
@@ -357,7 +357,25 @@ function SessionScreenContent(props: {
 
       <Show when={composer.active()} keyed>
         {(model) => (
-          <ActiveSessionComposerRegion session={session} model={model} suggestionBoundary={timeline.scroller} />
+          <ActiveSessionComposerRegion
+            session={session}
+            model={model}
+            suggestionBoundary={timeline.scroller}
+            // cheyenne: the status line slot under the composer
+            footer={
+              <ExtensionSlot
+                at="session.composer"
+                input={{
+                  get session() {
+                    return props.view()
+                  },
+                  get screen() {
+                    return props.screen
+                  },
+                }}
+              />
+            }
+          />
         )}
       </Show>
       <Show when={!isDesktop() && !!session.identity.params.id && bottomMobileTabs()}>{mobileTabs()}</Show>
