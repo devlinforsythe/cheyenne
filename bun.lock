@@ -407,6 +407,7 @@
         "@betteroffice/fonts": "0.4.0",
         "@betteroffice/pptx": "0.2.0",
         "@betteroffice/xlsx": "0.3.0",
+        "@cheyenne/plugin-output-styles": "workspace:*",
         "@dnd-kit/abstract": "0.5.0",
         "@dnd-kit/dom": "0.5.0",
         "@dnd-kit/solid": "0.5.0",
@@ -607,6 +608,17 @@
     "packages/plugins/media": {
       "name": "@cheyenne/plugin-media",
       "version": "0.0.1",
+      "peerDependencies": {
+        "@opencode/plugin": "^2.0.27 || ^0.0.0-dev",
+      },
+    },
+    "packages/plugins/output-styles": {
+      "name": "@cheyenne/plugin-output-styles",
+      "version": "0.0.1",
+      "dependencies": {
+        "@opencode/schema": "workspace:*",
+        "effect": "catalog:",
+      },
       "peerDependencies": {
         "@opencode/plugin": "^2.0.27 || ^0.0.0-dev",
       },
@@ -1649,6 +1661,8 @@
     "@cheyenne/plugin-claude-hooks": ["@cheyenne/plugin-claude-hooks@workspace:packages/plugins/claude-hooks"],
 
     "@cheyenne/plugin-media": ["@cheyenne/plugin-media@workspace:packages/plugins/media"],
+
+    "@cheyenne/plugin-output-styles": ["@cheyenne/plugin-output-styles@workspace:packages/plugins/output-styles"],
 
     "@cheyenne/plugin-workers": ["@cheyenne/plugin-workers@workspace:packages/plugins/workers"],
 

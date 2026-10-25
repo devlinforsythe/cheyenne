@@ -33,6 +33,8 @@ import sessionExtras from "./session-extras" // cheyenne
 import sessionExtrasRenderer from "./session-extras/renderer" // cheyenne
 import statusline from "./statusline" // cheyenne
 import statuslineRenderer from "./statusline/renderer" // cheyenne
+import outputStyles from "./output-styles" // cheyenne
+import outputStylesRenderer from "./output-styles/renderer" // cheyenne
 
 // The window renders once every built-in is active, so the small renderer entries load with the app, like the
 // features they replaced. Heavy UI stays behind `lazy()` inside them.
@@ -61,4 +63,5 @@ export const builtins = Extension.compose(
   { ...rooms, renderer: eager(roomsRenderer) }, // cheyenne
   { ...sessionExtras, renderer: eager(sessionExtrasRenderer) }, // cheyenne
   { ...statusline, renderer: eager(statuslineRenderer) }, // cheyenne
+  { ...outputStyles, renderer: eager(outputStylesRenderer) }, // cheyenne
 )

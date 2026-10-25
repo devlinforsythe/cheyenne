@@ -16,6 +16,7 @@ import commandCenter from "./command-center" // cheyenne
 import rooms from "./rooms" // cheyenne
 import sessionExtras from "./session-extras" // cheyenne
 import statusline from "./statusline" // cheyenne
+import outputStyles from "./output-styles" // cheyenne
 
 /**
  * Built-in extensions with their main entries. Lists every built-in so their ids stay reserved. `builtins.typecheck.ts`
@@ -39,4 +40,5 @@ export const builtins = Extension.compose(
   { ...rooms, main: () => import("./rooms/main") }, // cheyenne
   sessionExtras, // cheyenne
   { ...statusline, main: () => import("./statusline/main") }, // cheyenne
+  outputStyles, // cheyenne
 )

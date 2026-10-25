@@ -678,6 +678,7 @@ export const builtins = Extension.compose(
   { ...rooms, main: () => import("./rooms/main") }, // cheyenne
   sessionExtras, // cheyenne
   { ...statusline, main: () => import("./statusline/main") }, // cheyenne
+  outputStyles, // cheyenne
 )
 ```
 
@@ -708,6 +709,7 @@ export const builtins = Extension.compose(
   { ...rooms, renderer: eager(roomsRenderer) }, // cheyenne
   { ...sessionExtras, renderer: eager(sessionExtrasRenderer) }, // cheyenne
   { ...statusline, renderer: eager(statuslineRenderer) }, // cheyenne
+  { ...outputStyles, renderer: eager(outputStylesRenderer) }, // cheyenne
 )
 ```
 
