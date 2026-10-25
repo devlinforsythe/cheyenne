@@ -348,3 +348,34 @@ The four Agent OS rooms the owner picked (2026-10-20), written as our own code. 
 **Known.**
 - Commands in the mission folder are allowed since 2026-10-22: cursor and grok each ran `git init` + `git commit` over ACP in a temp folder (both `end_turn`, a commit made).
 - The server's default model, OpenCode Zen, fails with "This API key has expired" (owner-side). Use `-m openai/...` or renew the key.
+
+## Gap 3 — output styles (2026-10-25, branch `claude/cheyenne-output-styles-345f00`, not pushed)
+
+Claude Code's output styles: markdown files with `name`, `description` and `keep-coding-instructions` frontmatter. A style replaces the coding instructions in the system prompt, or appends to them when `keep-coding-instructions: true`.
+
+**Plugin.** `packages/plugins/output-styles` (new, no core edits).
+- `styles.ts` loads the built-ins (Default, Explanatory, Learning, in our own wording), then `~/.claude/output-styles/*.md`, then `<project>/.claude/output-styles/*.md`. A later file with the same name wins.
+- The choice is `outputStyle`, saved to `<project>/.claude/settings.local.json`. It is read from that file, then `.claude/settings.json`, then `~/.claude/settings.json`.
+- `index.ts` hooks `context` and `generate` to rewrite `system[0]`. It skips agents that bring their own system prompt.
+- `/output-style [name]` lists the styles or switches to one.
+- `rpc.ts` (`cheyenne.output-styles`: `list`, `set`) is used by the settings entry.
+
+**GUI extension.** `packages/gui-extensions/src/output-styles` (new) adds a Settings → General "Output style" row: one picker per project open in the sidebar.
+
+Edits to shared files, each marked `// cheyenne`:
+- `packages/gui-extensions/src/main.ts`: import + `outputStyles` in `builtins`;
+- `packages/gui-extensions/src/renderer.ts`: two imports + the `outputStyles` renderer entry;
+- `packages/gui-extensions/README.md`: the two builtins blocks mirror the code;
+- `packages/gui-extensions/package.json`: `@cheyenne/plugin-output-styles` workspace dependency (JSON, so no marker); `bun.lock` follows.
+
+**Enable.** Add `/Users/devlinforsythe/cheyenne/packages/plugins/output-styles` to `plugins` in `~/.config/opencode/opencode.jsonc`.
+
+**Check.** `bun test` in packages/plugins/output-styles: `styles.test.ts` (loading order, save/current, compose) passes.
+
+**Verified** 2026-10-25 on a throwaway server (own DB, port 5299) with the plugin enabled through `OPENCODE_CONFIG_CONTENT`, model `claude-code/sonnet`, asking "In one sentence: what does git rebase do?":
+- Default: a plain one-sentence answer.
+- After `/output-style Pirate` (a project style): "Arr! Git rebase takes yer commits…". `settings.local.json` then held `"outputStyle": "Pirate"`.
+- Screenshot: `docs/output-styles-proof.jpg`, the web UI on that server, with `/output-style` in the command menu and the Pirate reply.
+
+**Known.**
+- The desktop settings row typechecks but was not seen running. Extensions load only in the desktop build, and a sibling session's isolated dev instance held port 3084.

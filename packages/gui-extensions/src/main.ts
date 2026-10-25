@@ -14,6 +14,7 @@ import wsl from "./wsl"
 import microsoftOffice from "./microsoft-office"
 import commandCenter from "./command-center" // cheyenne
 import rooms from "./rooms" // cheyenne
+import outputStyles from "./output-styles" // cheyenne
 
 /**
  * Built-in extensions with their main entries. Lists every built-in so their ids stay reserved. `builtins.typecheck.ts`
@@ -35,4 +36,5 @@ export const builtins = Extension.compose(
   microsoftOffice,
   { ...commandCenter, main: () => import("./command-center/main") }, // cheyenne
   { ...rooms, main: () => import("./rooms/main") }, // cheyenne
+  outputStyles, // cheyenne
 )
