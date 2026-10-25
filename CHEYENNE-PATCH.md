@@ -393,3 +393,28 @@ These match three features of the Claude Desktop Code tab. Most of the code is n
 - A tab inside a collapsed folder is hidden, including the active one.
 - Draft tabs get no Move to item.
 - Browser/preview is not a side tab. OpenCode has none, and it was left out.
+
+## Gap 1 — Claude Code hooks (2026-10-25, branch `claude/cheyenne-hooks-f1f4d6`)
+
+`packages/plugins/claude-hooks/` runs Claude Code's shell-command hooks in Cheyenne sessions. It is a plugin on OpenCode's existing hook points; no core files are touched.
+- **Sources**: `~/.claude/settings.json`, `<project>/.claude/settings.json`, `<project>/.claude/settings.local.json`, plus the `hooks` of every Claude Code plugin those files enable (`enabledPlugins` → `~/.claude/plugins/installed_plugins.json` → the plugin's `hooks/hooks.json` or the file its `plugin.json` names, with `CLAUDE_PLUGIN_ROOT` set). Re-read on every event, so edits apply without a restart.
+- **Events**:
+  - SessionStart → session `context`: run once per session; stdout goes into the system prompt.
+  - UserPromptSubmit → session `prompt`: stdout is appended to the prompt.
+  - PreToolUse → tool `execute.before`: exit 2, `{"decision":"block"}`, `permissionDecision:"deny"` or `continue:false` rejects the call, with stderr or the JSON reason.
+  - PostToolUse → tool `execute.after` (completed calls).
+  - Stop → `session.execution.succeeded`.
+- **Same as Claude Code**: matcher rules (empty or `*` = all, `A|B` = exact names, else a regex), JSON on stdin (`session_id`, `cwd`, `hook_event_name`, `tool_name`, `tool_input`, `tool_response`, `prompt`, `source`), `timeout` in seconds (default 60), `CLAUDE_PROJECT_DIR`. OpenCode tools map to Claude names (shell→Bash, edit/patch→Edit, write→Write, read→Read, glob, grep, webfetch, websearch, subagent→Task, skill, question→AskUserQuestion), and input keys go to snake_case (`filePath` → `file_path`).
+- Hooks run through `/bin/zsh -lc`, because the server's PATH has no `~/bin` or Homebrew.
+- **To turn it on**: add the plugin's folder to `"plugins"` in `~/.config/opencode/opencode.jsonc` (global) or a project's `opencode.jsonc`.
+
+**Known limits.**
+- A UserPromptSubmit block cannot drop the prompt: the `prompt` hook has no failure channel. The prompt is replaced by the block reason, and the model replies that it was blocked. A real drop needs a core change in `packages/core/src/plugin/hooks.ts`.
+- SessionStart runs once per session per server process; a session resumed after a restart reruns it as `startup`.
+- Stop and PostToolUse output is ignored (no `decision:block` continuation).
+
+**Check.** `bun test` in packages/plugins/claude-hooks runs 3 tests: the matcher rules and name mapping, the block / allow decision, and a real run of a project `.claude/settings.local.json` PreToolUse guard.
+
+**Verified** 2026-10-25 in Cheyenne.app's own background server, in a demo project (`~/cheyenne-hooks-demo`, plugin listed in its `opencode.jsonc`, a `Bash` PreToolUse guard that rejects commands containing BLOCKME). See `docs/claude-hooks-proof.jpg`:
+- The shell call `echo BLOCKME` was rejected with "PreToolUse hook blocked Bash: cheyenne-guard: commands containing BLOCKME are not allowed".
+- The model quoted the owner's real SessionStart hooks from its system prompt: the brain briefing ("## Portfolio — briefing (2026-10-25 23:05Z)") and ponytail ("PONYTAIL MODE ACTIVE — level: full").
