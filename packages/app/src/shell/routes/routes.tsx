@@ -23,7 +23,8 @@ const ConnectServerScreen = lazy(() =>
   import("@/servers/connect/screen").then((module) => ({ default: module.ConnectServerScreen })),
 )
 
-const TargetSessionRouteContent = lazy(() =>
+// cheyenne: exported for split view
+export const TargetSessionRouteContent = lazy(() =>
   loadSessionRoute().then((module) => ({ default: module.TargetSessionRouteContent })),
 )
 
@@ -68,7 +69,8 @@ export function AppRoutes() {
   )
 }
 
-function TargetServerRoute(props: ParentProps) {
+// cheyenne: exported for split view
+export function TargetServerRoute(props: ParentProps) {
   const params = useParams<{ serverKey: string }>()
   const global = useGlobal()
 

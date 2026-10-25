@@ -676,6 +676,7 @@ export const builtins = Extension.compose(
   microsoftOffice,
   { ...commandCenter, main: () => import("./command-center/main") }, // cheyenne
   { ...rooms, main: () => import("./rooms/main") }, // cheyenne
+  sessionExtras, // cheyenne
 )
 ```
 
@@ -704,6 +705,7 @@ export const builtins = Extension.compose(
   { ...microsoftOffice, renderer: eager(microsoftOfficeRenderer) },
   { ...commandCenter, renderer: eager(commandCenterRenderer) }, // cheyenne
   { ...rooms, renderer: eager(roomsRenderer) }, // cheyenne
+  { ...sessionExtras, renderer: eager(sessionExtrasRenderer) }, // cheyenne
 )
 ```
 
