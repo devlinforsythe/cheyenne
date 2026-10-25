@@ -26,6 +26,7 @@ import type { SessionScreenLayout } from "../screen-layout"
 import { syncPromptModel } from "../session-model-helpers"
 import type { SessionTimelineInteraction } from "../timeline/interaction"
 import { createSessionRevert } from "../revert"
+import { createSessionRewind } from "../rewind" // cheyenne
 import { SessionComposerRegion } from "./session-composer-region"
 import { createSessionComposerController, type SessionComposerController } from "./controller"
 import { SessionQueuePanel } from "./queue-panel"
@@ -189,6 +190,19 @@ export function createActiveSessionRegion(input: {
   })
 
   const revertMessage: NonNullable<SessionUserActions["revert"]> = ({ messageID }) => revert.to(messageID)
+  const rewind = createSessionRewind({ session: input.session, revert }) // cheyenne
+  // cheyenne: a double Esc in an empty composer opens the rewind screen, like Claude Code.
+  let lastEscape = 0 // cheyenne
+  onMount(() => // cheyenne
+    makeEventListener(document, "keydown", (event: KeyboardEvent) => { // cheyenne
+      if (event.key !== "Escape" || event.defaultPrevented || dialog.active || input.session.data.isChild()) return // cheyenne
+      if (!promptRef?.contains(event.target as Node) || promptLength(prompt.current()) > 0) return // cheyenne
+      if (event.timeStamp - lastEscape > 500) return void (lastEscape = event.timeStamp) // cheyenne
+      lastEscape = 0 // cheyenne
+      event.preventDefault() // cheyenne
+      rewind.open() // cheyenne
+    }), // cheyenne
+  ) // cheyenne
 
   const notifyFailed = () => {
     showToast({ title: language.t("common.requestFailed") })
@@ -234,6 +248,17 @@ export function createActiveSessionRegion(input: {
       onSelect: () => command.trigger("file.open", "palette"),
     },
   ])
+  command.register("session-rewind", () => [ // cheyenne
+    { // cheyenne
+      id: "session.rewind", // cheyenne
+      title: language.t("command.session.rewind"), // cheyenne
+      description: language.t("command.session.rewind.description"), // cheyenne
+      category: language.t("command.category.session"), // cheyenne
+      slash: "rewind", // cheyenne
+      disabled: !input.session.identity.params.id || input.session.history.visibleUserMessages().length === 0, // cheyenne
+      onSelect: () => rewind.open(), // cheyenne
+    }, // cheyenne
+  ]) // cheyenne
 
   const dock = {
     state,
@@ -275,6 +300,10 @@ export function createActiveSessionRegion(input: {
 
           return revertMessage
         },
+        get rewind() { // cheyenne
+          if (input.session.data.isChild()) return // cheyenne
+          return ({ messageID }: { messageID: string }) => rewind.open(messageID) // cheyenne
+        }, // cheyenne
         get pending() {
           if (input.session.data.isChild()) return
 

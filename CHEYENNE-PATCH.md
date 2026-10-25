@@ -348,3 +348,34 @@ The four Agent OS rooms the owner picked (2026-10-20), written as our own code. 
 **Known.**
 - Commands in the mission folder are allowed since 2026-10-22: cursor and grok each ran `git init` + `git commit` over ACP in a temp folder (both `end_turn`, a commit made).
 - The server's default model, OpenCode Zen, fails with "This API key has expired" (owner-side). Use `-m openai/...` or renew the key.
+
+## Gap 4 — Rewind screen, like Claude Code's `/rewind` (2026-10-25, branch `claude/cheyenne-rewind-0708a0`)
+
+This change is client-only and makes no server or core edits. It is opened three ways: `/rewind`, a double Esc in an empty composer, or "Rewind…" in a user message's actions. The screen lists the user messages as checkpoints, then offers three choices: restore code and conversation, conversation only, or code only. Before restoring, it says what will be lost and lists the changed files (from `session.diff`).
+
+| File | Change |
+|---|---|
+| `packages/app/src/session/revert.ts` | `to(messageID, files?)` passes `files` to `revert.stage` |
+| `packages/app/src/session/composer/region.tsx` | creates the rewind helper; adds the Esc-Esc listener, the `session.rewind` command (slash `rewind`), and the `rewind` timeline action |
+| `packages/session-ui/src/actions.ts` | optional `rewind` action |
+| `packages/session-ui/src/message/message-content.tsx` | "Rewind…" button (icon `outline-undo`) |
+| `packages/app/src/runtime/i18n/en.ts`, `packages/ui/src/i18n/en.ts` | strings |
+
+Added files: `packages/app/src/session/rewind.tsx` (the dialog and the restore flow), `rewind-mode.ts` and `rewind-mode.test.ts` (the mode logic and its test), and `docs/rewind-proof.jpg`.
+
+- **Both** and **conversation only** stage the existing session revert, with `files: true` or `files: false`. Redo (`/redo`) undoes either one until a new message is sent.
+- **Code only** works in steps:
+  1. Interrupt the session and wait for it to stop.
+  2. Stage a revert with files.
+  3. Read the restored files.
+  4. Clear the revert.
+  5. Write the files back.
+
+  Limits: files created after the checkpoint are kept and listed in a toast, because there is no file-delete API. Redo cannot undo a code-only restore, and the dialog says so.
+- **Verified live (2026-10-25):** a dev server ran from the worktree with a temporary DB, and a Claude Sonnet session made 3 turns: notes.txt became "turn one", then "turn two", then extra.txt was created.
+  - Code only to turn two: notes became "turn one", extra.txt was kept with a toast, and all 3 messages stayed.
+  - Conversation only to turn three: the message left the transcript, its text went back into the composer, and the files did not change.
+  - `/redo` brought the message back.
+  - Both to turn one: notes became "line one", extra.txt was removed, and the transcript was empty.
+  - `/redo` restored the messages and both files.
+  - `/rewind`, Esc Esc and the message button all opened the screen.

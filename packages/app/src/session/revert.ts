@@ -45,7 +45,7 @@ export function createSessionRevert(input: {
     target.context.replace([...context.comments, ...context.files])
   }
 
-  const stage = async (message: SessionMessageUser, previous: SessionMessageUser | undefined) => {
+  const stage = async (message: SessionMessageUser, previous: SessionMessageUser | undefined, files?: boolean) => { // cheyenne: files (rewind)
     const sessionID = input.session.identity.params.id
 
     if (!sessionID) return
@@ -69,20 +69,20 @@ export function createSessionRevert(input: {
 
     if (!(await request(() => server.api.session.wait({ sessionID })))) return
 
-    if (!(await request(() => server.api.session.revert.stage({ sessionID, messageID: message.id })))) return
+    if (!(await request(() => server.api.session.revert.stage({ sessionID, messageID: message.id, files })))) return // cheyenne
     // Like the TUI, pending inputs are left alone: the revert hides them, committing it drops them,
     // and redo delivers them.
     restore(target, message)
     owner.run(() => input.setActiveMessage(previous))
   }
 
-  const to = async (messageID: string) => {
+  const to = async (messageID: string, files?: boolean) => { // cheyenne: files (rewind)
     const messages = input.session.history.userMessages()
     const index = messages.findIndex((message) => message.id === messageID)
     const message = messages[index]
 
     if (!message) return
-    await stage(message, messages[index - 1])
+    await stage(message, messages[index - 1], files) // cheyenne
   }
 
   const undo = async () => {
