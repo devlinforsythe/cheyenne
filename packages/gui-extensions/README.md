@@ -677,6 +677,7 @@ export const builtins = Extension.compose(
   { ...commandCenter, main: () => import("./command-center/main") }, // cheyenne
   { ...rooms, main: () => import("./rooms/main") }, // cheyenne
   sessionExtras, // cheyenne
+  { ...statusline, main: () => import("./statusline/main") }, // cheyenne
 )
 ```
 
@@ -706,6 +707,7 @@ export const builtins = Extension.compose(
   { ...commandCenter, renderer: eager(commandCenterRenderer) }, // cheyenne
   { ...rooms, renderer: eager(roomsRenderer) }, // cheyenne
   { ...sessionExtras, renderer: eager(sessionExtrasRenderer) }, // cheyenne
+  { ...statusline, renderer: eager(statuslineRenderer) }, // cheyenne
 )
 ```
 

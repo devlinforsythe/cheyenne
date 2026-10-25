@@ -15,6 +15,7 @@ import microsoftOffice from "./microsoft-office"
 import commandCenter from "./command-center" // cheyenne
 import rooms from "./rooms" // cheyenne
 import sessionExtras from "./session-extras" // cheyenne
+import statusline from "./statusline" // cheyenne
 
 /**
  * Built-in extensions with their main entries. Lists every built-in so their ids stay reserved. `builtins.typecheck.ts`
@@ -37,4 +38,5 @@ export const builtins = Extension.compose(
   { ...commandCenter, main: () => import("./command-center/main") }, // cheyenne
   { ...rooms, main: () => import("./rooms/main") }, // cheyenne
   sessionExtras, // cheyenne
+  { ...statusline, main: () => import("./statusline/main") }, // cheyenne
 )

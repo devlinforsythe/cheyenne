@@ -418,3 +418,19 @@ These match three features of the Claude Desktop Code tab. Most of the code is n
 **Verified** 2026-10-25 in Cheyenne.app's own background server, in a demo project (`~/cheyenne-hooks-demo`, plugin listed in its `opencode.jsonc`, a `Bash` PreToolUse guard that rejects commands containing BLOCKME). See `docs/claude-hooks-proof.jpg`:
 - The shell call `echo BLOCKME` was rejected with "PreToolUse hook blocked Bash: cheyenne-guard: commands containing BLOCKME are not allowed".
 - The model quoted the owner's real SessionStart hooks from its system prompt: the brain briefing ("## Portfolio — briefing (2026-10-25 23:05Z)") and ponytail ("PONYTAIL MODE ACTIVE — level: full").
+
+## Gap 2 — Claude Code-style status line under the composer (2026-10-25, branch `claude/cheyenne-statusline-6aa244`)
+
+**Setting.** `statusLine: { "type": "command", "command": "…", "padding": 0 }`, as in Claude Code. Read on every run, last one found wins: `~/.config/opencode/opencode.json(c)`, `<dir>/opencode.json(c)`, `~/.claude/settings.json`, `<dir>/.claude/settings.json`, `<dir>/.claude/settings.local.json`.
+
+**Run.** The main process runs the command in `zsh -lc`, in the session folder, with the session JSON on stdin (5 s timeout). Keys follow Claude Code: `hook_event_name`, `session_id`, `cwd`, `model{id, display_name}`, `workspace{current_dir, project_dir}`, `cost{total_cost_usd}`, `context_window{total_input_tokens, total_output_tokens, context_window_size, used_percentage}`. `output_style` is absent until Gap 3 is merged. The first stdout line is drawn under the composer with its ANSI colours (16, 256 and truecolor; bold, dim, italic, underline); other escapes are dropped. It refreshes on message and session changes, at most every 300 ms. A failure, or no setting, draws nothing.
+
+Core edits (each marked `// cheyenne`):
+- `packages/gui-extensions/src/sdk/registries.ts`: a `session.composer` slot.
+- `packages/app/src/session/composer/region.tsx`: a `footer` prop, rendered under the composer.
+- `packages/app/src/session/screen.tsx`: passes `<ExtensionSlot at="session.composer">` as that footer.
+- `packages/gui-extensions/src/{main,renderer}.ts`, README: register the `statusline` built-in.
+
+Added: `packages/gui-extensions/src/statusline/` (contract, main, renderer, `line.ts` payload + ANSI parser, `line.test.ts`), `docs/statusline-sample.sh` (model, git branch, folder), proof `docs/statusline-proof.png`.
+
+**Verified** 2026-10-25 in an isolated dev build (`OPENCODE_DESKTOP_TEST_ROOT`, own server on 3084): a session in a folder whose `.claude/settings.json` runs the sample shows `Flint 40B Free on statusline-demo in statusline-demo` in colour, and it updated live when the model was switched; a session elsewhere showed the owner's `~/.claude/settings.json` ponytail line.
