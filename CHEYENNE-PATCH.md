@@ -496,3 +496,14 @@ Added files: `packages/app/src/session/rewind.tsx` (the dialog and the restore f
   - Both to turn one: notes became "line one", extra.txt was removed, and the transcript was empty.
   - `/redo` restored the messages and both files.
   - `/rewind`, Esc Esc and the message button all opened the screen.
+
+## Packaged-build check (2026-10-25)
+
+The merged `cheyenne-claude` build (`packages/desktop/dist/mac-arm64/Cheyenne.app`) was run as a test instance: test server on port 3184 with its own XDG dirs, and a throwaway git project holding a status-line script, a `UserPromptSubmit` hook and a Pirate style. All five features passed:
+- **Panes:** side panel tabs (Files Changed, plus an added Artifacts tab), the tab menu (Rename / Close / Move to / Open in split view), split view, vertical sidebar sections, and a session moved into a nested group.
+- **Status line:** it showed in a single view and on both panes of a split.
+- **Output styles:** `/output-style Pirate` saved `"outputStyle": "Pirate"` to `settings.local.json`, and the next reply came back in pirate voice. The Settings → Preferences "Output style" row is now seen running and shows each open project.
+- **Hooks:** `UserPromptSubmit` wrote its line when the prompt was sent.
+- **Rewind:** a double Esc opened it. After a checkpoint was picked it offered all three modes, and "both" took the message out of the transcript and put its text back in the composer.
+
+**Gotcha:** the packaged app ignores `--user-data-dir`, `OPENCODE_DESKTOP_TEST_ROOT` and `ISOLATED_SERVER`. To test it in isolation, quit the real Cheyenne first, then move `~/Library/Application Support/com.devlinforsythe.cheyenne` aside and put it back afterwards. The test server also imports copies of your Claude and Codex sessions through the agent-sessions plugin.
